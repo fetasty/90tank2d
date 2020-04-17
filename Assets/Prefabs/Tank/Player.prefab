@@ -13,8 +13,8 @@ GameObject:
   - component: {fileID: 4623771181177294143}
   - component: {fileID: 3371911337313817913}
   - component: {fileID: 8758369289053651180}
-  - component: {fileID: 4623771181177294139}
   - component: {fileID: 1930168090}
+  - component: {fileID: 4623771181177294139}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -153,29 +153,6 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.28, y: 0.28}
   m_EdgeRadius: 0
---- !u!114 &4623771181177294139
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4623771181177294140}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b7ccbb38b5fbb5a428484357fed6ba32, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  idleAudio: {fileID: 8300000, guid: c5cfdb88353725d4e80bb5a486606c9e, type: 3}
-  drivingAudio: {fileID: 8300000, guid: 9e338ba8c87e0ba4aaf9d88ae7141118, type: 3}
-  shield: {fileID: 4623771182258025520}
-  bulletPrefab: {fileID: 1058526958572749233, guid: c606a88c77572bb419164c068204f9fb,
-    type: 3}
-  moveSpeed: 2
-  bornShieldTime: 5
-  bonusShieldTime: 10
-  fillTime: 1
-  bulletCapacity: 1
-  fireDuration: 0.2
 --- !u!82 &1930168090
 AudioSource:
   m_ObjectHideFlags: 0
@@ -272,6 +249,29 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &4623771181177294139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4623771181177294140}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7ccbb38b5fbb5a428484357fed6ba32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  idleAudio: {fileID: 8300000, guid: c5cfdb88353725d4e80bb5a486606c9e, type: 3}
+  drivingAudio: {fileID: 8300000, guid: 9e338ba8c87e0ba4aaf9d88ae7141118, type: 3}
+  shield: {fileID: 4623771182258025520}
+  bulletPrefab: {fileID: 1058526958572749233, guid: c606a88c77572bb419164c068204f9fb,
+    type: 3}
+  moveSpeed: 3
+  bornShieldTime: 5
+  bonusShieldTime: 10
+  fillTime: 0.5
+  bulletCapacity: 1
+  fireDuration: 0.2
 --- !u!1001 &3437096126451944895
 PrefabInstance:
   m_ObjectHideFlags: 0

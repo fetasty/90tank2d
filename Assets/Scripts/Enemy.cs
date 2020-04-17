@@ -48,6 +48,7 @@ public class Enemy : MonoBehaviour
         Move();
     }
     public bool TakeDamage() {
+        if (GameController.Current.IsGameOver) { return false; }
         if (Bonus) {
             if (bonusAction != null) { bonusAction(Type); }
             Bonus = false;
@@ -68,8 +69,7 @@ public class Enemy : MonoBehaviour
         if (fireTimer <= 0.0f) {
             GameObject obj = Instantiate(bulletPrefab, transform.position, transform.rotation);
             Bullet bullet = obj.GetComponent<Bullet>();
-            bullet.isPlayerBullet = false;
-            bullet.Level = 0;
+            bullet.Set(false, 0);
             fireTimer = Random.Range(minFireTime, maxFireTime);
         }
     }
@@ -105,5 +105,12 @@ public class Enemy : MonoBehaviour
         if (isMove) {
             transform.Translate(transform.up * moveSpeed * Time.fixedDeltaTime, Space.World);
         }
+    }
+    public void Set(int enemyType, bool enemyBonus,
+    System.Action<int> enemyDieAction, System.Action<int> bonusAction) {
+        Type = enemyType;
+        Bonus = enemyBonus;
+        dieAction = enemyDieAction;
+        this.bonusAction = bonusAction;
     }
 }

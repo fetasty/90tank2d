@@ -57,12 +57,10 @@ public class Bullet : MonoBehaviour
             case "Player":
                 if (!isPlayerBullet) {
                     Player player = other.GetComponent<Player>();
-                    if (player != null) {
-                        if (!player.TakeDamage()) {
-                            AudioSource.PlayClipAtPoint(hitAudio, transform.position);
-                        } else {
-                            Instantiate(explosionPrefab, other.transform.position, other.transform.rotation);
-                        }
+                    if (!player.TakeDamage()) {
+                        AudioSource.PlayClipAtPoint(hitAudio, transform.position);
+                    } else {
+                        Instantiate(explosionPrefab, other.transform.position, other.transform.rotation);
                     }
                     Destroy(gameObject);
                 }
@@ -70,12 +68,10 @@ public class Bullet : MonoBehaviour
             case "Enemy":
                 if (isPlayerBullet) {
                     Enemy enemy = other.GetComponent<Enemy>();
-                    if (enemy != null) {
-                        if (!enemy.TakeDamage()) {
-                            AudioSource.PlayClipAtPoint(hitAudio, transform.position);
-                        } else {
-                            Instantiate(explosionPrefab, other.transform.position, other.transform.rotation);
-                        }
+                    if (!enemy.TakeDamage()) {
+                        AudioSource.PlayClipAtPoint(hitAudio, transform.position);
+                    } else {
+                        Instantiate(explosionPrefab, other.transform.position, other.transform.rotation);
                     }
                     Destroy(gameObject);
                 }
@@ -98,8 +94,9 @@ public class Bullet : MonoBehaviour
                 Destroy(gameObject);
                 break;
             case "Home":
-                Instantiate(explosionPrefab, other.transform.position, other.transform.rotation);
-                other.GetComponent<Home>().TakeDamage();
+                if (other.GetComponent<Home>().TakeDamage()) {
+                    Instantiate(explosionPrefab, other.transform.position, other.transform.rotation);
+                }
                 Destroy(gameObject);
                 break;
         }
@@ -123,6 +120,10 @@ public class Bullet : MonoBehaviour
                 if (count >= wallDestroy) { break; }
             }
         }
+    }
+    public void Set(bool isPlayerBullet, int level = 0) {
+        this.isPlayerBullet = isPlayerBullet;
+        this.Level = level;
     }
     #endregion
 }

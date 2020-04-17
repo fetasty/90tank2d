@@ -24,13 +24,22 @@ public class Player : MonoBehaviour
     private int bulletNum; //当前存弹量
     private float fireTimer; // 开火cd
     private float fillTimer; // 填充cd
-    
+    private Action<int> dieAction;
+    private int playerID; // 0 = 1p, 1 = 2p
+    public int PlayerID {
+        get { return playerID; }
+        set {
+            if (value < 0) { playerID = 0; }
+            else if (value > 3) { playerID = 3; }
+            if (animator != null) { animator.SetInteger("type", playerID); }
+        }
+    }
     public int Level {
         get { return level; }
         set {
             if (value >= MIN_LEVEL && value <= MAX_LEVEL) {
                 this.level = value;
-                animator.SetInteger("level", value);
+                if (animator != null) { animator.SetInteger("level", value); }
             }
         }
     }
@@ -53,12 +62,20 @@ public class Player : MonoBehaviour
             }
         }
     }
+    private int BulletCapacity {
+        get {
+            if (Level < 2) { return bulletCapacity; }
+            else { return bulletCapacity * 2; }
+        }
+    }
     void Start()
     {
         animator = GetComponent<Animator>();
         audioSource = GetComponent<AudioSource>();
         SetShield(bornShieldTime);
-        bulletNum = bulletCapacity;
+        bulletNum = BulletCapacity;
+        animator.SetInteger("type", PlayerID);
+        animator.SetInteger("level", Level);
     }
     private void Update() {
         ShieldUpdate();
@@ -72,13 +89,16 @@ public class Player : MonoBehaviour
     /// </summary>
     /// <returns>受伤是否死亡, true, 死亡; false, 未死亡</returns>
     public bool TakeDamage() {
+        if (GameController.Current.IsGameOver) { return false; }
         if (isInShield) { return false; }
         if (Level >= 2) {
             Level -= 2;
             return false;
         } else {
             Destroy(gameObject);
-            // todo 判断玩家继续机会, 是否重新生成
+            if (dieAction != null) {
+                dieAction(PlayerID);
+            }
             return true;
         }
     }
@@ -138,8 +158,8 @@ public class Player : MonoBehaviour
         if (fillTimer > 0.0f) {
             fillTimer -= Time.deltaTime;
         }
-        if (fillTimer <= 0.0f && bulletNum < bulletCapacity) {
-            bulletNum = bulletCapacity;
+        if (fillTimer <= 0.0f && bulletNum < BulletCapacity) {
+            bulletNum = BulletCapacity;
         }
         // 按了开火键
         if (allowFire && Input.GetAxisRaw("Fire1") > 0.01f) {
@@ -147,8 +167,7 @@ public class Player : MonoBehaviour
             if (bulletNum > 0) {
                 GameObject obj = Instantiate(bulletPrefab, transform.position, transform.rotation);
                 Bullet bullet = obj.GetComponent<Bullet>();
-                bullet.isPlayerBullet = true;
-                bullet.Level = BulletLevel;
+                bullet.Set(true, BulletLevel);
                 --bulletNum;
                 fireTimer = fireDuration;
                 if (fillTimer <= 0.0f) {
@@ -156,5 +175,10 @@ public class Player : MonoBehaviour
                 }
             }
         }
+    }
+    public void Set(int id, System.Action<int> dieAction) {
+        PlayerID = id;
+        this.dieAction = dieAction;
+        // this.Level = 3; // todo debug
     }
 }

@@ -11,7 +11,6 @@ public class GameManager : MonoBehaviour
     }
     public GameMode CurrentMode;
     private static GameManager gameManager;
-
     private string nextScene;
     public string NextScene {
         get {
@@ -24,7 +23,7 @@ public class GameManager : MonoBehaviour
             return gameManager;
         }
     }
-
+    private GameManager() {}
     public void LoadSceneAsync(string name) {
         nextScene = name;
         SceneManager.LoadScene("Loading");
@@ -43,5 +42,8 @@ public class GameManager : MonoBehaviour
     }
     private void Awake() {
         gameManager = this;
+    }
+    private void Start() {
+        Screen.fullScreen = false;
     }
 }
