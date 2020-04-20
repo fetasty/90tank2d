@@ -165,8 +165,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bulletPrefab: {fileID: 1058526958572749233, guid: c606a88c77572bb419164c068204f9fb,
     type: 3}
+  explosionPrefab: {fileID: 1126545928910412902, guid: 21dfbb7572f722e4ea88e9dc0d8205f8,
+    type: 3}
   moveSpeed: 2
   minFireTime: 0.5
-  maxFireTime: 5
+  maxFireTime: 4
   minMoveTime: 0.5
   maxMoveTime: 3

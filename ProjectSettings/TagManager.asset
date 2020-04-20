@@ -10,6 +10,8 @@ TagManager:
   - Enemy
   - Barrier
   - Home
+  - Map
+  - Bonus
   layers:
   - Default
   - TransparentFX

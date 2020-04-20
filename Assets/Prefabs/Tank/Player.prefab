@@ -165,7 +165,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 8300000, guid: c5cfdb88353725d4e80bb5a486606c9e, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 0.4
+  m_Volume: 0.3
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -266,12 +266,14 @@ MonoBehaviour:
   shield: {fileID: 4623771182258025520}
   bulletPrefab: {fileID: 1058526958572749233, guid: c606a88c77572bb419164c068204f9fb,
     type: 3}
-  moveSpeed: 3
+  explosionPrefab: {fileID: 1126545928910412902, guid: 21dfbb7572f722e4ea88e9dc0d8205f8,
+    type: 3}
   bornShieldTime: 5
-  bonusShieldTime: 10
-  fillTime: 0.5
-  bulletCapacity: 1
   fireDuration: 0.2
+  initMoveSpeed: 2
+  initFillTime: 1
+  initBulletCapacity: 1
+  bonusShieldTime: 15
 --- !u!1001 &3437096126451944895
 PrefabInstance:
   m_ObjectHideFlags: 0
