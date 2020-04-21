@@ -24,6 +24,7 @@ public class Player : MonoBehaviour {
     public float initFillTime = 1f;         // 初始子弹填充时间
     public int initBulletCapacity = 1;      // 初始容弹量
     public float bonusShieldTime = 15f;     // 道具护盾时间
+    private bool horizontalInputLast;        // 最后的轴向输入是否为水平方向 (移动优化)
 
     private Animator animator;
     private AudioSource audioSource;
@@ -165,15 +166,30 @@ public class Player : MonoBehaviour {
         float vAbs = Mathf.Abs(v);
         bool isMove = true;
         float rotationAngle = 0f;
-        if (hAbs > vAbs) {
+        if (hAbs > vAbs) { // h
             v = 0f;
             if (h > 0f) { rotationAngle = -90f; }
             else if (h < 0f) { rotationAngle = 90f; }
-        } else if (vAbs > hAbs) {
+            horizontalInputLast = true;
+        } else if (vAbs > hAbs) { // v
             h = 0f;
             if (v > 0f) { rotationAngle = 0f; }
             else if (v < 0f) { rotationAngle = 180f; }
-        } else { isMove = false; } // todo 这里的处理导致每次同时按下两个按钮则停止移动, 操作不流畅
+            horizontalInputLast = false;
+        } else if (hAbs > 0f) { // h + v
+            // 同时按住了水平移动与垂直移动
+            if (!horizontalInputLast) {
+                v = 0f;
+                if (h > 0f) { rotationAngle = -90f; }
+                else if (h < 0f) { rotationAngle = 90f; }
+            } else {
+                h = 0f;
+                if (v > 0f) { rotationAngle = 0f; }
+                else if (v < 0f) { rotationAngle = 180f; }
+            }
+        } else { 
+            isMove = false;
+        }
         if (isMove) {
             transform.rotation = Quaternion.Euler(0f, 0f, rotationAngle);
             transform.Translate(new Vector3(h, v, 0f).normalized * initMoveSpeed * Time.fixedDeltaTime, Space.World);
