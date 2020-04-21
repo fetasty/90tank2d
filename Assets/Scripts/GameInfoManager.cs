@@ -30,6 +30,7 @@ public class GameInfoManager : MonoBehaviour {
 
     private void Start() {
         GameController.Instance.AddListener(MsgID.GAME_START, OnMsgGameStart);
+        GameController.Instance.AddListener(MsgID.GAME_PAUSE, OnMsgGamePause);
         GameController.Instance.AddListener(MsgID.GAME_OVER, OnMsgGameEnd);
         GameController.Instance.AddListener(MsgID.GAME_WIN, OnMsgGameEnd);
         GameController.Instance.AddListener(MsgID.ENEMY_SPAWN, OnMsgEnemySpawn);
@@ -38,6 +39,8 @@ public class GameInfoManager : MonoBehaviour {
         GameController.Instance.AddListener(MsgID.PLAYER_DIE, OnMsgPlayerDie);
         GameController.Instance.AddListener(MsgID.BONUS_TANK_TRIGGER, OnMsgBonusTank);
         GameController.Instance.AddListener(MsgID.BONUS_STOP_WATCH_TRIGGER, OnMsgBonusPause);
+        GameController.Instance.AddListener(MsgID.GAME_RESUME, OnMsgGameResume);
+        GameController.Instance.AddListener(MsgID.GAME_RETRY, OnMsgGameRetry);
     }
     private void Update() {
         if (bonusStopTimer > 0f) {
@@ -49,7 +52,7 @@ public class GameInfoManager : MonoBehaviour {
     }
     public bool CanSpawnEnemy {
         get {
-            return !IsGamePause && (AliveEnemyCount < maxAliveEnemyCount)
+            return (AliveEnemyCount < maxAliveEnemyCount)
             && (SpawnedEnemyCount < totalEnemyCount);
         }
     }
@@ -84,7 +87,7 @@ public class GameInfoManager : MonoBehaviour {
     /// 敌人出生点CD
     /// </summary>
     public float EnemySpawnPointWaitTime { get { return enemySpawnPointWaitTime; } }
-    public bool CanSpawnPlayer { get { return !IsGamePause && SpawnedPlayerCount < PlayerTankCount; } }
+    public bool CanSpawnPlayer { get { return SpawnedPlayerCount < PlayerTankCount; } }
     public int LeftEnemyCount { get { return totalEnemyCount - SpawnedEnemyCount; } }
     private void Clear() {
         AliveEnemyCount = 0;
@@ -98,6 +101,16 @@ public class GameInfoManager : MonoBehaviour {
     public void OnMsgGameStart(Msg msg) {
         Clear();
         IsGamePlaying = true;
+    }
+    public void OnMsgGameRetry(Msg msg) {
+        Clear();
+        IsGamePlaying = true;
+    }
+    public void OnMsgGamePause(Msg msg) {
+        IsGamePause = true;
+    }
+    public void OnMsgGameResume(Msg msg) {
+        IsGamePause = false;
     }
     public void OnMsgEnemySpawn(Msg msg) {
         ++SpawnedEnemyCount;

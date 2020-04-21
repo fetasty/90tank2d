@@ -29,6 +29,7 @@ public class Player : MonoBehaviour {
     private Animator animator;
     private AudioSource audioSource;
     private int level = 0;                  // 玩家等级
+    private GameInfoManager info;
     /// <summary>
     /// 玩家等级
     /// </summary>
@@ -82,6 +83,7 @@ public class Player : MonoBehaviour {
     }
     void Start() {
         GameController.Instance.PostMsg(new Msg(MsgID.PLAYER_BORN, ID));
+        info = GameController.Instance.InfoManager;
         animator = GetComponent<Animator>();
         audioSource = GetComponent<AudioSource>();
         animator.SetInteger("type", ID);
@@ -101,10 +103,12 @@ public class Player : MonoBehaviour {
         GameController.Instance.RemoveListener(MsgID.MOBILE_FIRE_INPUT, OnMsgMobileFire);
     }
     private void Update() {
+        if (info.IsGamePause) { return; }
         ShieldUpdate();
         FireUpdate();
     }
     private void FixedUpdate() {
+        if (info.IsGamePause) { return; }
         Move();
     }
     /// <summary>
@@ -140,12 +144,12 @@ public class Player : MonoBehaviour {
         Vector2 result = Vector2.zero;
         // 本地双人
         if (Global.Instance.SelectedGameMode == GameMode.DOUBLE) {
-            if (ID > 0) {
+            if (ID == 0) {
+                result.x = Input.GetAxisRaw("Horizontal");
+                result.y = Input.GetAxisRaw("Vertical");
+            } else {
                 result.x = Input.GetAxisRaw("Horizontal2");
                 result.y = Input.GetAxisRaw("Vertical2");
-            } else {
-                result.x = Input.GetAxisRaw("Horizontal1");
-                result.y = Input.GetAxisRaw("Vertical1");
             }
             return result;
         }
@@ -154,8 +158,8 @@ public class Player : MonoBehaviour {
             return mobileInput;
         }
         // win平台
-        result.x = Input.GetAxisRaw("Horizontal1");
-        result.y = Input.GetAxisRaw("Vertical1");
+        result.x = Input.GetAxisRaw("Horizontal");
+        result.y = Input.GetAxisRaw("Vertical");
         return result;
     }
     private void Move() {
@@ -221,14 +225,14 @@ public class Player : MonoBehaviour {
     }
     private void FireUpdate() {
         bool allowFire = true;
-        if (FireTimer > 0.0f) {
+        if (FireTimer > 0f) {
             allowFire = false;
             FireTimer -= Time.deltaTime;
         }
-        if (FillTimer > 0.0f) {
+        if (FillTimer > 0f) {
             FillTimer -= Time.deltaTime;
         }
-        if (FillTimer <= 0.0f && BulletCount < BulletCapacity) {
+        if (FillTimer <= 0f && BulletCount < BulletCapacity) {
             BulletCount = BulletCapacity;
         }
         // 按了开火键

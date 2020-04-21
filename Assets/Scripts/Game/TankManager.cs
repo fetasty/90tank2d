@@ -25,9 +25,11 @@ public class TankManager : MonoBehaviour {
         info = GameController.Instance.InfoManager;
         GameController.Instance.AddListener(MsgID.GAME_START, OnMsgGameStart);
         GameController.Instance.AddListener(MsgID.PLAYER_DIE, OnMsgPlayerDie);
-        GameController.Instance.AddListener(MsgID.BONUS_BOOM_TRIGGER, OnMsgBonusTrigger);
+        GameController.Instance.AddListener(MsgID.BONUS_BOOM_TRIGGER, OnMsgBonusBoomTrigger);
+        GameController.Instance.AddListener(MsgID.BONUS_TANK_TRIGGER, OnMsgBonusTankTrigger);
     }
     private void Update() {
+        if (info.IsGamePause) { return; }
         EnemySpawnUpdate();
     }
     /// <summary>
@@ -90,15 +92,12 @@ public class TankManager : MonoBehaviour {
     /// <returns>是否生成成功</returns>
     public bool SpawnPlayer(int playerID) {
         if (playerID < Player.MIN_ID || playerID > Player.MAX_ID) { return false; } // 未设计这种玩家
-        if (IsPlayerExist(playerID)) { return false; }
+        if (playerExists[playerID]) { return false; }
         GameObject obj = Instantiate(SpawnerPrefab, PlayerSpawnPoints[playerID], Quaternion.identity);
         Spawner spawner = obj.GetComponent<Spawner>();
         spawner.SetPlayer(playerID);
         playerExists[playerID] = true;
         return true;
-    }
-    private bool IsPlayerExist(int playerID) {
-        return playerExists[playerID];
     }
     private void Clear() {
         // spawner
@@ -153,10 +152,31 @@ public class TankManager : MonoBehaviour {
             SpawnPlayer(playerID);
         }
     }
-    public void OnMsgBonusTrigger(Msg msg) {
+    public void OnMsgBonusBoomTrigger(Msg msg) {
         Enemy[] enemies = FindObjectsOfType<Enemy>();
         foreach (Enemy enemy in enemies) {
             enemy.Die();
         }
+    }
+    public void OnMsgBonusTankTrigger(Msg msg) {
+        // 看看有没有需要重生的玩家
+        int id = GetNeedSpawnPlayerID();
+        if (id < 0) { return; }
+        if (info.CanSpawnPlayer) { SpawnPlayer(id); }
+    }
+    /// <summary>
+    /// 需要被重生的玩家ID
+    /// </summary>
+    /// <returns>小于0说明没有玩家需要重生, 否则返回需要重生的玩家ID</returns>
+    private int GetNeedSpawnPlayerID() {
+        GameMode mode = Global.Instance.SelectedGameMode;
+        if (!playerExists[0] && (mode == GameMode.SINGLE || mode == GameMode.DOUBLE)) {
+            return 0;
+        }
+        if (!playerExists[1] && (mode == GameMode.DOUBLE)) {
+            return 1;
+        }
+        // todo lan player check
+        return -1;
     }
 }

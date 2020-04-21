@@ -14,12 +14,13 @@ public class UIManager : MonoBehaviour {
     public Button retryBtn;
     public Button backBtn;
     public Button exitBtn;
+    public Button pauseBtn;
     public GameObject GameOverPrefab;   // 游戏结束
     public GameObject GameWinPrefab;    // 游戏胜利
 
     private GameInfoManager info;
     private GameObject gameEnd;
-    private enum ClickType { RESUME, RETRY, BACK, EXIT }
+    private enum ClickType { PAUSE, RESUME, RETRY, BACK, EXIT }
     private void Start() {
         info = GameController.Instance.InfoManager;
         GameController.Instance.AddListener(MsgID.ENEMY_SPAWN, msg => UpdateEnemyCount());
@@ -30,10 +31,12 @@ public class UIManager : MonoBehaviour {
         GameController.Instance.AddListener(MsgID.GAME_OVER, msg => OnMsgGameOver());
         GameController.Instance.AddListener(MsgID.GAME_WIN, msg => OnMsgGameWin());
         GameController.Instance.AddListener(MsgID.BONUS_TANK_TRIGGER, msg => UpdatePlayerTankCount());
+        GameController.Instance.AddListener(MsgID.GAME_RESUME, msg => OnMsgGameResume());
         resumeBtn.onClick.AddListener(() => OnClick(ClickType.RESUME));
         retryBtn.onClick.AddListener(() => OnClick(ClickType.RETRY));
         backBtn.onClick.AddListener(() => OnClick(ClickType.BACK));
         exitBtn.onClick.AddListener(() => OnClick(ClickType.EXIT));
+        pauseBtn.onClick.AddListener(() => OnClick(ClickType.PAUSE));
         mobileInput.SetActive(Global.Instance.IsMobile); // 移动段的输入
     }
     private void UpdateEnemyCount() {
@@ -51,12 +54,18 @@ public class UIManager : MonoBehaviour {
     private void SetOperations(bool active) {
         operations.SetActive(active);
     }
+    private void SetPauseBtn(bool isGamePlaying) {
+        if (Global.Instance.IsMobile) {
+            pauseBtn.gameObject.SetActive(isGamePlaying);
+        }
+    }
     private void InitialUI() {
         UpdateEnemyCount();
         UpdateKilledCount();
         UpdatePlayerTankCount();
         SetPauseMask(false);
         SetOperations(false);
+        SetPauseBtn(true);
     }
     private void OnClick(ClickType type) {
         switch (type) {
@@ -71,6 +80,10 @@ public class UIManager : MonoBehaviour {
                 break;
             case ClickType.RETRY:
                 GameController.Instance.PostMsg(new Msg(MsgID.GAME_RETRY, null));
+                InitialUI();
+                break;
+            case ClickType.PAUSE:
+                GameController.Instance.PostMsg(new Msg(MsgID.GAME_PAUSE, null));
                 break;
             default:
                 break;
@@ -80,6 +93,12 @@ public class UIManager : MonoBehaviour {
         SetPauseMask(true);
         SetOperations(true);
         resumeBtn.gameObject.SetActive(true);
+        SetPauseBtn(false);
+    }
+    private void OnMsgGameResume() {
+        SetOperations(false);
+        SetPauseMask(false);
+        SetPauseBtn(true);
     }
     public void OnMsgGameStart() {
         InitialUI();
@@ -96,5 +115,6 @@ public class UIManager : MonoBehaviour {
         SetPauseMask(false);
         SetOperations(true);
         resumeBtn.gameObject.SetActive(false);
+        SetPauseBtn(false);
     }
 }

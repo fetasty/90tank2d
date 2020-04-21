@@ -37,6 +37,18 @@ public class GameController : MonoBehaviour {
         PostMsg(new Msg(MsgID.GAME_START, Global.Instance.SelectedGameMode));
     }
     private void Update() {
+        MsgUpdate();
+        PauseUpdate();
+    }
+    private void PauseUpdate() {
+        if (infoManager.IsGamePause || !infoManager.IsGamePlaying) { return; }
+        if (!Global.Instance.IsMobile && Global.Instance.SelectedGameMode != GameMode.LAN) {
+            if (Input.GetAxisRaw("Cancel") > 0f) {
+                GameController.Instance.PostMsg(new Msg(MsgID.GAME_PAUSE, null));
+            }
+        }
+    }
+    private void MsgUpdate() {
         while(msgs.Count > 0) {
             Msg msg = msgs.Dequeue();
             if (msgDic.ContainsKey(msg.ID) && msgDic[msg.ID] != null) {

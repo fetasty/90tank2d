@@ -33,16 +33,32 @@ public class Bullet : MonoBehaviour
     public float maxLife = 3.0f;
     public float speed = 6.0f; // 子弹移动速度, 随等级变化
     public const int wallDestroy = 2; // 每次拆一半的墙(2小块)
+    private GameInfoManager info;
+    private float lifeTimer;
     #endregion
 
     #region lifecall
     private void Start()
     {
+        info = GameController.Instance.InfoManager;
         AudioSource.PlayClipAtPoint(fireAudio, transform.position);
-        Destroy(gameObject, maxLife);
+        lifeTimer = maxLife;
+    }
+    private void Update() {
+        if (info.IsGamePause) { return; }
+        LifeUpdate();
     }
     private void FixedUpdate() {
+        if (info.IsGamePause) { return; }
         transform.Translate(transform.up * speed * Time.fixedDeltaTime, Space.World);
+    }
+    private void LifeUpdate() {
+        if (lifeTimer > 0f) {
+            lifeTimer -= Time.deltaTime;
+            if (lifeTimer <= 0f) {
+                Destroy(gameObject);
+            }
+        }
     }
     private void OnTriggerEnter2D(Collider2D other) {
         switch (other.tag) {
