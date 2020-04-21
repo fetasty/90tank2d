@@ -18,8 +18,12 @@ public class Welcome : MonoBehaviour {
         singleBtn.onClick.AddListener(() => EnterGame(GameMode.SINGLE));
         doubleBtn.onClick.AddListener(() => EnterGame(GameMode.DOUBLE));
         //lanBtn.onClick.AddListener(() => EnterGame(GameMode.LAN)); // todo
+        lanBtn.interactable = false; // todo
         exitBtn.onClick.AddListener(() => Global.Instance.Quit());
         ShowVersionInfo();
+        if (Global.Instance.IsMobile) {
+            doubleBtn.interactable = false;
+        }
     }
     private void EnterGame(GameMode mode) {
         Global.Instance.SelectedGameMode = mode;

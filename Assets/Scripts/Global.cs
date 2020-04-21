@@ -30,12 +30,14 @@ public class Global
     /// 当前是否为移动平台
     /// </summary>
     /// <returns>true说明在移动平台上(Android/iOS)</returns>
-    public bool IsMobile() {
-#if UNITY_IOS || UNITY_ANDROID
-        return true;
-#else
-        return false;
-#endif
+    public bool IsMobile {
+        get {
+            #if UNITY_IOS || UNITY_ANDROID
+                return true;
+            #else
+                return false;
+            #endif
+        }
     }
     public void EnterGame() {
         SceneManager.LoadScene(GameScene); // 这里很快, 直接同步加载了

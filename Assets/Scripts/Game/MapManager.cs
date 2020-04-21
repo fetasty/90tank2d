@@ -50,7 +50,18 @@ public class MapManager : MonoBehaviour {
     /// 随机生成地图
     /// </summary>
     public void CreateMap() {
-
+        // todo
+    }
+    /// <summary>
+    /// 玩家老家, 玩家出生点, 敌人出生点 都不可被占用
+    /// </summary>
+    /// <param name="x">坐标x值</param>
+    /// <param name="y">坐标y值</param>
+    /// <returns>是否可用</returns>
+    private bool IsPositionAvailable(float x, float y) {
+        if (y < -5f || y > 5f) { return false; }
+        if (x < 2f && x > -2f && y < -4f) { return false; }
+        return true;
     }
     /// <summary>
     /// 根据预设数据生成地图

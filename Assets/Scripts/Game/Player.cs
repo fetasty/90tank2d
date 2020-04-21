@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Player : MonoBehaviour {
     public const int MIN_ID = 0;
@@ -13,6 +14,8 @@ public class Player : MonoBehaviour {
     public GameObject shield;
     public GameObject bulletPrefab;
     public GameObject explosionPrefab;
+    private bool isMobileFireDown;          // 虚拟开火按钮是否按下
+    private Vector2 mobileInput;            // 虚拟摇杆输入
 
     public float bornShieldTime = 5f;       // 出生的护盾时间
     public float fireDuration = 0.2f;       // 两发子弹的最小时间间隔
@@ -86,11 +89,15 @@ public class Player : MonoBehaviour {
         BulletCount = BulletCapacity;
         GameController.Instance.AddListener(MsgID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
         GameController.Instance.AddListener(MsgID.BONUS_SHIELD_TRIGGER, OnMsgShield);
+        GameController.Instance.AddListener(MsgID.MOBILE_MOVE_INPUT, OnMsgMobileMove);
+        GameController.Instance.AddListener(MsgID.MOBILE_FIRE_INPUT, OnMsgMobileFire);
     }
     private void OnDestroy() {
         // 游戏中会动态销毁的实例, 必须在销毁时注销监听
         GameController.Instance.RemoveListener(MsgID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
         GameController.Instance.RemoveListener(MsgID.BONUS_SHIELD_TRIGGER, OnMsgShield);
+        GameController.Instance.RemoveListener(MsgID.MOBILE_MOVE_INPUT, OnMsgMobileMove);
+        GameController.Instance.RemoveListener(MsgID.MOBILE_FIRE_INPUT, OnMsgMobileFire);
     }
     private void Update() {
         ShieldUpdate();
@@ -129,22 +136,26 @@ public class Player : MonoBehaviour {
         shield.SetActive(false);
     }
     private Vector2 GetMoveInput() {
-        // todo 操作优化
         Vector2 result = Vector2.zero;
-        if (ID == 0) {
-            result.x = Input.GetAxisRaw("Horizontal1");
-            result.y = Input.GetAxisRaw("Vertical1");
-            return result;
-        }
+        // 本地双人
         if (Global.Instance.SelectedGameMode == GameMode.DOUBLE) {
-            result.x = Input.GetAxisRaw("Horizontal2");
-            result.y = Input.GetAxisRaw("Vertical2");
-            return result;
-        } else {
-            // 网络输入
+            if (ID > 0) {
+                result.x = Input.GetAxisRaw("Horizontal2");
+                result.y = Input.GetAxisRaw("Vertical2");
+            } else {
+                result.x = Input.GetAxisRaw("Horizontal1");
+                result.y = Input.GetAxisRaw("Vertical1");
+            }
             return result;
         }
-        
+        // 移动平台
+        if (Global.Instance.IsMobile) {
+            return mobileInput;
+        }
+        // win平台
+        result.x = Input.GetAxisRaw("Horizontal1");
+        result.y = Input.GetAxisRaw("Vertical1");
+        return result;
     }
     private void Move() {
         Vector2 moveInput = GetMoveInput();
@@ -153,19 +164,19 @@ public class Player : MonoBehaviour {
         float hAbs = Mathf.Abs(h);
         float vAbs = Mathf.Abs(v);
         bool isMove = true;
-        float rotationAngle = 0.0f;
-        if (hAbs > vAbs && hAbs > 0.01f) {
-            v = 0.0f;
-            if (h > 0.01f) { rotationAngle = -90.0f; }
-            else if (h < -0.01f) { rotationAngle = 90.0f; }
-        } else if (vAbs > hAbs && vAbs > 0.01f) {
-            h = 0.0f;
-            if (v > 0.01f) { rotationAngle = 0.0f; }
-            else if (v < -0.01f) { rotationAngle = 180.0f; }
-        } else { isMove = false; }
+        float rotationAngle = 0f;
+        if (hAbs > vAbs) {
+            v = 0f;
+            if (h > 0f) { rotationAngle = -90f; }
+            else if (h < 0f) { rotationAngle = 90f; }
+        } else if (vAbs > hAbs) {
+            h = 0f;
+            if (v > 0f) { rotationAngle = 0f; }
+            else if (v < 0f) { rotationAngle = 180f; }
+        } else { isMove = false; } // todo 这里的处理导致每次同时按下两个按钮则停止移动, 操作不流畅
         if (isMove) {
-            transform.rotation = Quaternion.Euler(0.0f, 0.0f, rotationAngle);
-            transform.Translate(new Vector3(h, v, 0.0f) * initMoveSpeed * Time.fixedDeltaTime, Space.World);
+            transform.rotation = Quaternion.Euler(0f, 0f, rotationAngle);
+            transform.Translate(new Vector3(h, v, 0f).normalized * initMoveSpeed * Time.fixedDeltaTime, Space.World);
         }
         audioSource.clip = isMove ? drivingAudio : idleAudio;
         if (!audioSource.isPlaying) {
@@ -181,12 +192,16 @@ public class Player : MonoBehaviour {
         }
     }
     private bool FireInput() {
-        if (ID == 0) { return Input.GetAxisRaw("Fire1") > 0f; }
         if (Global.Instance.SelectedGameMode == GameMode.DOUBLE) {
+            if (ID == 0) {
+                return Input.GetAxisRaw("Fire1") > 0f;
+            }
             return Input.GetAxisRaw("Fire2") > 0f;
         }
-        // todo 联网输入
-        return false;
+        if (Global.Instance.IsMobile) {
+            return isMobileFireDown;
+        }
+        return Input.GetAxisRaw("Fire1") > 0f;
     }
     private void FireUpdate() {
         bool allowFire = true;
@@ -231,5 +246,11 @@ public class Player : MonoBehaviour {
         if (ID == (int) msg.Param) {
             SetShield(bonusShieldTime);
         }
+    }
+    public void OnMsgMobileMove(Msg msg) {
+        mobileInput = (Vector2) msg.Param;
+    }
+    public void OnMsgMobileFire(Msg msg) {
+        isMobileFireDown = (bool) msg.Param;
     }
 }

@@ -9,6 +9,7 @@ public class UIManager : MonoBehaviour {
     public Text tankCountText;
     public GameObject pauseMask;
     public GameObject operations;
+    public GameObject mobileInput;
     public Button resumeBtn;
     public Button retryBtn;
     public Button backBtn;
@@ -33,6 +34,7 @@ public class UIManager : MonoBehaviour {
         retryBtn.onClick.AddListener(() => OnClick(ClickType.RETRY));
         backBtn.onClick.AddListener(() => OnClick(ClickType.BACK));
         exitBtn.onClick.AddListener(() => OnClick(ClickType.EXIT));
+        mobileInput.SetActive(Global.Instance.IsMobile); // 移动段的输入
     }
     private void UpdateEnemyCount() {
         enemyCountText.text = $"剩余敌人: {info.LeftEnemyCount}";
