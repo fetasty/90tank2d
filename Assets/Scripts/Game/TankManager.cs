@@ -89,7 +89,7 @@ public class TankManager : MonoBehaviour {
     /// <param name="playerID">玩家的唯一标识</param>
     /// <returns>是否生成成功</returns>
     public bool SpawnPlayer(int playerID) {
-        if (playerID < Player.MIN_ID || playerID > Player.MIN_ID) { return false; } // 未设计这种玩家
+        if (playerID < Player.MIN_ID || playerID > Player.MAX_ID) { return false; } // 未设计这种玩家
         if (IsPlayerExist(playerID)) { return false; }
         GameObject obj = Instantiate(SpawnerPrefab, PlayerSpawnPoints[playerID], Quaternion.identity);
         Spawner spawner = obj.GetComponent<Spawner>();

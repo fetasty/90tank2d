@@ -87,6 +87,11 @@ public class Player : MonoBehaviour {
         GameController.Instance.AddListener(MsgID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
         GameController.Instance.AddListener(MsgID.BONUS_SHIELD_TRIGGER, OnMsgShield);
     }
+    private void OnDestroy() {
+        // 游戏中会动态销毁的实例, 必须在销毁时注销监听
+        GameController.Instance.RemoveListener(MsgID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
+        GameController.Instance.RemoveListener(MsgID.BONUS_SHIELD_TRIGGER, OnMsgShield);
+    }
     private void Update() {
         ShieldUpdate();
         FireUpdate();
@@ -111,6 +116,7 @@ public class Player : MonoBehaviour {
         }
     }
     public void LevelUp() {
+        if (Level >= MAX_LEVEL) { return; }
         ++Level;
     }
     public void SetShield(float time) {
@@ -122,10 +128,28 @@ public class Player : MonoBehaviour {
         ShieldTimer = 0.0f;
         shield.SetActive(false);
     }
-    private void Move() {
+    private Vector2 GetMoveInput() {
         // todo 操作优化
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
+        Vector2 result = Vector2.zero;
+        if (ID == 0) {
+            result.x = Input.GetAxisRaw("Horizontal1");
+            result.y = Input.GetAxisRaw("Vertical1");
+            return result;
+        }
+        if (Global.Instance.SelectedGameMode == GameMode.DOUBLE) {
+            result.x = Input.GetAxisRaw("Horizontal2");
+            result.y = Input.GetAxisRaw("Vertical2");
+            return result;
+        } else {
+            // 网络输入
+            return result;
+        }
+        
+    }
+    private void Move() {
+        Vector2 moveInput = GetMoveInput();
+        float h = moveInput.x;
+        float v = moveInput.y;
         float hAbs = Mathf.Abs(h);
         float vAbs = Mathf.Abs(v);
         bool isMove = true;
@@ -156,6 +180,14 @@ public class Player : MonoBehaviour {
             }
         }
     }
+    private bool FireInput() {
+        if (ID == 0) { return Input.GetAxisRaw("Fire1") > 0f; }
+        if (Global.Instance.SelectedGameMode == GameMode.DOUBLE) {
+            return Input.GetAxisRaw("Fire2") > 0f;
+        }
+        // todo 联网输入
+        return false;
+    }
     private void FireUpdate() {
         bool allowFire = true;
         if (FireTimer > 0.0f) {
@@ -169,7 +201,7 @@ public class Player : MonoBehaviour {
             BulletCount = BulletCapacity;
         }
         // 按了开火键
-        if (allowFire && Input.GetAxisRaw("Fire1") > 0.01f) {
+        if (allowFire && FireInput()) {
             // 是否有子弹
             if (BulletCount > 0) {
                 GameObject obj = Instantiate(bulletPrefab, transform.position, transform.rotation);

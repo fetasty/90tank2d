@@ -19,9 +19,10 @@ public class Welcome : MonoBehaviour {
         doubleBtn.onClick.AddListener(() => EnterGame(GameMode.DOUBLE));
         //lanBtn.onClick.AddListener(() => EnterGame(GameMode.LAN)); // todo
         exitBtn.onClick.AddListener(() => Global.Instance.Quit());
+        ShowVersionInfo();
     }
     private void EnterGame(GameMode mode) {
-        Global.Instance.SelectedGameMode = GameMode.SINGLE;
+        Global.Instance.SelectedGameMode = mode;
         Global.Instance.EnterGame();
     }
     private void ShowVersionInfo() {
