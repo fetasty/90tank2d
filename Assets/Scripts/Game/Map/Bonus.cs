@@ -23,15 +23,7 @@ public class Bonus : MonoBehaviour
     }
     private void Update() {
         if (GameController.Instance.InfoManager.IsGamePause) { return; }
-        if (lifeTimer > 0f) {
-            lifeTimer -= Time.deltaTime;
-            if (lifeTimer <= warnLifeTime && !anim.isPlaying) {
-                anim.Play();
-            }
-            if (lifeTimer <= 0f) {
-                Destroy(gameObject);
-            }
-        }
+        LifeUpdate();
     }
     private void OnTriggerEnter2D(Collider2D other) {
         if (other.tag == "Player") {
@@ -63,6 +55,17 @@ public class Bonus : MonoBehaviour
             GameController.Instance.PostMsg(msg);
             AudioSource.PlayClipAtPoint(bonusAudio, transform.position);
             Destroy(gameObject);
+        }
+    }
+    private void LifeUpdate() {
+        if (lifeTimer > 0f) {
+            lifeTimer -= Time.deltaTime;
+            if (lifeTimer <= warnLifeTime && !anim.isPlaying) {
+                anim.Play();
+            }
+            if (lifeTimer <= 0f) {
+                Destroy(gameObject);
+            }
         }
     }
 }

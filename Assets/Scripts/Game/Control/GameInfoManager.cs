@@ -17,18 +17,19 @@ public class GameInfoManager : MonoBehaviour {
     public int KilledEnemyCount { get; private set; }               // 击杀的敌人数量
 
     // 通过接口修改, 可以用来控制难度
-    private int totalEnemyCount = 30;               // 一共需要生成的敌人数量
+    private int totalEnemyCount = 40;               // 一共需要生成的敌人数量
     private int maxAliveEnemyCount = 6;             // 允许同时或者的敌人数量
-    private float minEnemySpawnTime = 2f;           // 刷新敌人的最短间隔
-    private float maxEnemySpawnTime = 4f;           // 刷新敌人的最大间隔
-    private float enemySpawnPointWaitTime = 2f;     // 每个敌人出生点的CD
-    private int initialPlayerTankCount = 5;         // 玩家的初始生命条数
+    private float minEnemySpawnTime = 0.5f;           // 刷新敌人的最短间隔
+    private float maxEnemySpawnTime = 3f;           // 刷新敌人的最大间隔
+    private float enemySpawnPointWaitTime = 1.5f;     // 每个敌人出生点的CD
+    private int initialPlayerTankCount = 3;         // 玩家的初始生命条数
     private int[] enemyTypeWeights = { 40, 30, 10, 10, 10 };   // 每种类型敌人的权重分界(和不超过100)
     private int enemyBonusWeight = 20;              // 数值不超过100
-    private float bonusStopTime = 15f;              // 道具暂停敌人时间
+    private float bonusStopTime = 10f;              // 道具暂停敌人时间
     private float bonusStopTimer;
 
     private void Start() {
+        InitParam();
         GameController.Instance.AddListener(MsgID.GAME_START, OnMsgGameStart);
         GameController.Instance.AddListener(MsgID.GAME_PAUSE, OnMsgGamePause);
         GameController.Instance.AddListener(MsgID.GAME_OVER, OnMsgGameEnd);
@@ -89,6 +90,15 @@ public class GameInfoManager : MonoBehaviour {
     public float EnemySpawnPointWaitTime { get { return enemySpawnPointWaitTime; } }
     public bool CanSpawnPlayer { get { return SpawnedPlayerCount < PlayerTankCount; } }
     public int LeftEnemyCount { get { return totalEnemyCount - SpawnedEnemyCount; } }
+    private void InitParam() {
+        GameMode mode = Global.Instance.SelectedGameMode;
+        if (mode == GameMode.DOUBLE) {
+            totalEnemyCount += 20;
+            maxAliveEnemyCount += 2;
+            initialPlayerTankCount += 3;
+        }
+        // todo
+    }
     private void ClearData() {
         AliveEnemyCount = 0;
         AlivePlayerCount = 0;

@@ -179,7 +179,5 @@ MonoBehaviour:
   hitAudio: {fileID: 8300000, guid: a36f2278a85dfc8458b569c2b95bacb6, type: 3}
   heartAudio: {fileID: 8300000, guid: 50300ee9c0208744cbfd15486777f40a, type: 3}
   explosionPoint: {fileID: 1988709592}
-  explosionPrefab: {fileID: 1126545928910412902, guid: 21dfbb7572f722e4ea88e9dc0d8205f8,
-    type: 3}
   maxLife: 3
-  speed: 6
+  speed: 8

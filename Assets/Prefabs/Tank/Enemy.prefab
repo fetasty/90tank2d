@@ -169,6 +169,6 @@ MonoBehaviour:
     type: 3}
   moveSpeed: 2
   minFireTime: 0.5
-  maxFireTime: 4
+  maxFireTime: 3
   minMoveTime: 0.5
   maxMoveTime: 3

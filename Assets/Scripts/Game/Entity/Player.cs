@@ -17,19 +17,26 @@ public class Player : MonoBehaviour {
     private bool isMobileFireDown;          // 虚拟开火按钮是否按下
     private Vector2 mobileInput;            // 虚拟摇杆输入
 
-    public float bornShieldTime = 5f;       // 出生的护盾时间
-    public float fireDuration = 0.2f;       // 两发子弹的最小时间间隔
+    public float bornShieldTime = 3f;       // 出生的护盾时间
+    public float fireDuration = 0.1f;       // 两发子弹的最小时间间隔
 
-    public float initMoveSpeed = 3f;        // 初始移动速度
+    public float initMoveSpeed = 2f;        // 初始移动速度
     public float initFillTime = 1f;         // 初始子弹填充时间
     public int initBulletCapacity = 1;      // 初始容弹量
-    public float bonusShieldTime = 15f;     // 道具护盾时间
+    public float bonusShieldTime = 10f;     // 道具护盾时间
     private bool horizontalInputLast;        // 最后的轴向输入是否为水平方向 (移动优化)
 
     private Animator animator;
     private AudioSource audioSource;
     private int level = 0;                  // 玩家等级
     private GameInfoManager info;
+    public float FillTime {
+        get {
+            if (level < 2) { return initFillTime; }
+            if (level < 3) { return initFillTime - 0.2f; }
+            return initFillTime - 0.3f;
+        }
+    }
     /// <summary>
     /// 玩家等级
     /// </summary>
@@ -70,6 +77,14 @@ public class Player : MonoBehaviour {
             } else {
                 return 2;
             }
+        }
+    }
+    public float MoveSpeed {
+        get {
+            if (level < 1) {
+                return initMoveSpeed;
+            }
+            return initMoveSpeed + 1f;
         }
     }
     /// <summary>
@@ -200,7 +215,7 @@ public class Player : MonoBehaviour {
         }
         if (isMove) {
             transform.rotation = Quaternion.Euler(0f, 0f, rotationAngle);
-            transform.Translate(new Vector3(h, v, 0f).normalized * initMoveSpeed * Time.fixedDeltaTime, Space.World);
+            transform.Translate(new Vector3(h, v, 0f).normalized * MoveSpeed * Time.fixedDeltaTime, Space.World);
         }
         audioSource.clip = isMove ? drivingAudio : idleAudio;
         if (!audioSource.isPlaying) {
@@ -249,7 +264,7 @@ public class Player : MonoBehaviour {
                 --BulletCount;
                 FireTimer = fireDuration;
                 if (FillTimer <= 0.0f) {
-                    FillTimer = initFillTime;
+                    FillTimer = FillTime;
                 }
             }
         }

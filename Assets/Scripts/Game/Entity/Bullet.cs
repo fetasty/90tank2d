@@ -31,7 +31,7 @@ public class Bullet : MonoBehaviour
     /// 子弹最大存在时长
     /// </summary>
     public float maxLife = 3.0f;
-    public float speed = 6.0f; // 子弹移动速度, 随等级变化
+    public float speed = 8.0f; // 子弹移动速度, 随等级变化
     public const int wallDestroy = 2; // 每次拆一半的墙(2小块)
     private GameInfoManager info;
     private float lifeTimer;
@@ -98,6 +98,7 @@ public class Bullet : MonoBehaviour
                 Destroy(gameObject);
                 break;
             case "Bullet":
+                if (isPlayerBullet == other.GetComponent<Bullet>().isPlayerBullet) { return; }
                 AudioSource.PlayClipAtPoint(hitAudio, transform.position);
                 Destroy(other.gameObject);
                 Destroy(gameObject);
