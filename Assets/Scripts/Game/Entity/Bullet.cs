@@ -32,7 +32,6 @@ public class Bullet : MonoBehaviour
     /// </summary>
     public float maxLife = 3.0f;
     public float speed = 8.0f; // 子弹移动速度, 随等级变化
-    public const int wallDestroy = 2; // 每次拆一半的墙(2小块)
     private GameInfoManager info;
     private float lifeTimer;
     #endregion
@@ -68,6 +67,7 @@ public class Bullet : MonoBehaviour
                 Destroy(gameObject);
                 break;
             case "Player":
+                if (!info.IsGamePlaying) { return; }
                 if (!isPlayerBullet) {
                     Player player = other.GetComponent<Player>();
                     if (!player.TakeDamage()) {
@@ -77,6 +77,7 @@ public class Bullet : MonoBehaviour
                 }
                 break;
             case "Enemy":
+                if (!info.IsGamePlaying) { return; }
                 if (isPlayerBullet) {
                     Enemy enemy = other.GetComponent<Enemy>();
                     if (!enemy.TakeDamage()) {
@@ -86,11 +87,13 @@ public class Bullet : MonoBehaviour
                 }
                 break;
             case "Wall":
+                if (!info.IsGamePlaying) { return; }
                 AudioSource.PlayClipAtPoint(heartAudio, transform.position); // todo 合适音效
                 DistroyWall("Wall");
                 Destroy(gameObject);
                 break;
             case "Steel":
+                if (!info.IsGamePlaying) { return; }
                 AudioSource.PlayClipAtPoint(hitAudio, transform.position);
                 if (Level >= 2) {
                     DistroyWall("Steel");
@@ -98,12 +101,14 @@ public class Bullet : MonoBehaviour
                 Destroy(gameObject);
                 break;
             case "Bullet":
+                if (!info.IsGamePlaying) { return; }
                 if (isPlayerBullet == other.GetComponent<Bullet>().isPlayerBullet) { return; }
                 AudioSource.PlayClipAtPoint(hitAudio, transform.position);
                 Destroy(other.gameObject);
                 Destroy(gameObject);
                 break;
             case "Home":
+                if (!info.IsGamePlaying) { return; }
                 if (!other.GetComponent<Home>().TakeDamage()) {
                     AudioSource.PlayClipAtPoint(hitAudio, transform.position);
                 }
@@ -115,19 +120,15 @@ public class Bullet : MonoBehaviour
     #region customfunc
     private void DistroyWall(string tag) {// 拆墙
         Vector2 centerPoint = new Vector2(explosionPoint.position.x, explosionPoint.position.y);
-        Vector2 size = new Vector2(0.51f, 0.1f);
+        Vector2 size = new Vector2(0.52f, 0.3f);
         float angle = transform.rotation.eulerAngles.z;
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.transform.position = explosionPoint.position;
-        cube.transform.localScale = new Vector3(0.51f, 0.1f, 1.0f);
-        cube.transform.rotation = transform.rotation;
         Collider2D[] colliders = Physics2D.OverlapBoxAll(centerPoint, size, angle);
         int count = 0;
-        for (int i = 0; i < colliders.Length; ++i) {
+        for (int i = colliders.Length - 1; i >= 0; --i) {
             if (colliders[i].tag == tag) {
                 Destroy(colliders[i].gameObject);
                 ++count;
-                if (count >= wallDestroy) { break; }
+                if (count >= 2) { break; }
             }
         }
     }

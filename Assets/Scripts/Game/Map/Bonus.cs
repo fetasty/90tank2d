@@ -10,8 +10,8 @@ public class Bonus : MonoBehaviour
     public const int BONUS_TYPE_COUNT = 6;
     public AudioClip bonusAudio;
     public Sprite[] sprites;
-    public float lifeTime = 12f;
-    public float warnLifeTime = 3f;
+    public float lifeTime = 30f;
+    public float warnLifeTime = 5f;
     public BonusType Type { get; set; }
     private Animation anim;
     private float lifeTimer;

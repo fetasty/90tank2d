@@ -42,6 +42,7 @@ public class GameInfoManager : MonoBehaviour {
         GameController.Instance.AddListener(MsgID.BONUS_STOP_WATCH_TRIGGER, OnMsgBonusPause);
         GameController.Instance.AddListener(MsgID.GAME_RESUME, OnMsgGameResume);
         GameController.Instance.AddListener(MsgID.GAME_RETRY, OnMsgGameRetry);
+        GameController.Instance.AddListener(MsgID.HOME_DESTROY, OnMsgHomeDestroy);
     }
     private void Update() {
         if (bonusStopTimer > 0f) {
@@ -116,6 +117,11 @@ public class GameInfoManager : MonoBehaviour {
     }
     public void OnMsgGameRetry(Msg msg) {
         ClearData();
+    }
+    public void OnMsgHomeDestroy(Msg msg) {
+        if (IsGamePlaying) {
+            GameController.Instance.PostMsg(new Msg(MsgID.GAME_OVER, null));
+        }
     }
     public void OnMsgGamePause(Msg msg) {
         IsGamePause = true;

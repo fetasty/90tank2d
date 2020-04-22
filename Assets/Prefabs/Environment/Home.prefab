@@ -122,3 +122,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   broken: {fileID: 21300012, guid: 529e000d42d32de49bc475716ba7ae37, type: 3}
+  explosionPrefab: {fileID: 1126545928910412902, guid: 21dfbb7572f722e4ea88e9dc0d8205f8,
+    type: 3}

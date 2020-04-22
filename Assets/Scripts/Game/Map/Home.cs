@@ -6,25 +6,22 @@ using System;
 public class Home : MonoBehaviour
 {
     public Sprite broken;
+    public GameObject explosionPrefab;
     private SpriteRenderer spriteRender;
     private BoxCollider2D boxCollider;
-    private Action<bool> homeDamageAction;
-    // Start is called before the first frame update
+    private GameInfoManager info;
     void Start()
     {
+        info = GameController.Instance.InfoManager;
         spriteRender = GetComponent<SpriteRenderer>();
         boxCollider = GetComponent<BoxCollider2D>();
     }
-    public void Set(Action<bool> homeDamage) {
-        homeDamageAction = homeDamage;
-    }
     public bool TakeDamage() {
-        //if (GameController.Instance.IsGameOver) { return false; }
+        if (!info.IsGamePlaying) { return false; }
+        GameController.Instance.PostMsg(new Msg(MsgID.HOME_DESTROY, null));
         spriteRender.sprite = broken;
         Destroy(boxCollider);
-        if (homeDamageAction != null) {
-            homeDamageAction(true);
-        }
+        Instantiate(explosionPrefab, transform.position, Quaternion.identity);
         return true;
     }
 }

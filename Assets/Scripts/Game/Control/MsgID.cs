@@ -27,4 +27,5 @@ public enum MsgID {
     BONUS_SHOVEL_TRIGGER,   // 触发铁锹奖励
     MOBILE_MOVE_INPUT,      // 移动端移动输入
     MOBILE_FIRE_INPUT,      // 移动端开火输入
+    HOME_DESTROY,           // 老家被毁 // todo 监听
 }

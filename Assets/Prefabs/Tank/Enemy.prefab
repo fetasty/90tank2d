@@ -171,4 +171,4 @@ MonoBehaviour:
   minFireTime: 0.5
   maxFireTime: 3
   minMoveTime: 0.5
-  maxMoveTime: 3
+  maxMoveTime: 5

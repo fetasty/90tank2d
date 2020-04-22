@@ -17,13 +17,13 @@ public class Player : MonoBehaviour {
     private bool isMobileFireDown;          // 虚拟开火按钮是否按下
     private Vector2 mobileInput;            // 虚拟摇杆输入
 
-    public float bornShieldTime = 3f;       // 出生的护盾时间
+    public float bornShieldTime = 5f;       // 出生的护盾时间
     public float fireDuration = 0.1f;       // 两发子弹的最小时间间隔
 
     public float initMoveSpeed = 2f;        // 初始移动速度
-    public float initFillTime = 1f;         // 初始子弹填充时间
+    public float initFillTime = 0.8f;         // 初始子弹填充时间
     public int initBulletCapacity = 1;      // 初始容弹量
-    public float bonusShieldTime = 10f;     // 道具护盾时间
+    public float bonusShieldTime = 15f;     // 道具护盾时间
     private bool horizontalInputLast;        // 最后的轴向输入是否为水平方向 (移动优化)
 
     private Animator animator;
@@ -32,9 +32,9 @@ public class Player : MonoBehaviour {
     private GameInfoManager info;
     public float FillTime {
         get {
-            if (level < 2) { return initFillTime; }
-            if (level < 3) { return initFillTime - 0.2f; }
-            return initFillTime - 0.3f;
+            if (level < 1) { return initFillTime; }
+            if (level < 2) { return initFillTime - 0.1f; }
+            return initFillTime - 0.2f;
         }
     }
     /// <summary>
