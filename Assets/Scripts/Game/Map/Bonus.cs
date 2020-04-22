@@ -10,10 +10,28 @@ public class Bonus : MonoBehaviour
     public const int BONUS_TYPE_COUNT = 6;
     public AudioClip bonusAudio;
     public Sprite[] sprites;
+    public float lifeTime = 12f;
+    public float warnLifeTime = 3f;
     public BonusType Type { get; set; }
+    private Animation anim;
+    private float lifeTimer;
     private void Start() {
         Type = (BonusType) Random.Range(0, BONUS_TYPE_COUNT);
         GetComponent<SpriteRenderer>().sprite = sprites[(int) Type];
+        anim = GetComponent<Animation>();
+        lifeTimer = lifeTime;
+    }
+    private void Update() {
+        if (GameController.Instance.InfoManager.IsGamePause) { return; }
+        if (lifeTimer > 0f) {
+            lifeTimer -= Time.deltaTime;
+            if (lifeTimer <= warnLifeTime && !anim.isPlaying) {
+                anim.Play();
+            }
+            if (lifeTimer <= 0f) {
+                Destroy(gameObject);
+            }
+        }
     }
     private void OnTriggerEnter2D(Collider2D other) {
         if (other.tag == "Player") {

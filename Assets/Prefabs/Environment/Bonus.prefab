@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 170273304686700492}
   - component: {fileID: 5523121908333501656}
   - component: {fileID: 8449287438518319044}
+  - component: {fileID: 1059150735}
   - component: {fileID: 47814915436262391}
   m_Layer: 0
   m_Name: Bonus
@@ -109,6 +110,22 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.3, y: 0.28}
   m_EdgeRadius: 0
+--- !u!111 &1059150735
+Animation:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778515222609647085}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Animation: {fileID: 7400000, guid: 053bc2e9db126a546892151063723e80, type: 2}
+  m_Animations:
+  - {fileID: 7400000, guid: 053bc2e9db126a546892151063723e80, type: 2}
+  m_WrapMode: 0
+  m_PlayAutomatically: 0
+  m_AnimatePhysics: 0
+  m_CullingType: 0
 --- !u!114 &47814915436262391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129,3 +146,5 @@ MonoBehaviour:
   - {fileID: 21300008, guid: d532de5e6df7ce948a5f9d07897aa865, type: 3}
   - {fileID: 21300002, guid: d532de5e6df7ce948a5f9d07897aa865, type: 3}
   - {fileID: 21300004, guid: d532de5e6df7ce948a5f9d07897aa865, type: 3}
+  lifeTime: 12
+  warnLifeTime: 3
