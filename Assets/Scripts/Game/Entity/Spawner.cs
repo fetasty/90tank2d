@@ -14,6 +14,10 @@ public class Spawner : MonoBehaviour {
     public bool EnemyBonus { get; private set; }
     private float spawnTimer;
     private void Start() {
+        GameObject spawners = GameObject.Find("/Spawners");
+        if (spawners != null) {
+            transform.parent = spawners.transform;
+        }
         if (SpawnPlayer) {
             GameController.Instance.PostMsg(new Msg(MsgID.PLAYER_SPAWN, this));
         } else {

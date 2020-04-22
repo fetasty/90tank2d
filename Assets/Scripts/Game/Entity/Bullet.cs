@@ -40,6 +40,8 @@ public class Bullet : MonoBehaviour
     #region lifecall
     private void Start()
     {
+        GameObject bullets = GameObject.Find("/Bullets");
+        if (bullets != null) { transform.parent = bullets.transform; }
         info = GameController.Instance.InfoManager;
         AudioSource.PlayClipAtPoint(fireAudio, transform.position);
         lifeTimer = maxLife;

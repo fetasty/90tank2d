@@ -82,6 +82,10 @@ public class Player : MonoBehaviour {
         }
     }
     void Start() {
+        GameObject tanks = GameObject.Find("/Tanks");
+        if (tanks != null) {
+            transform.parent = tanks.transform;
+        }
         GameController.Instance.PostMsg(new Msg(MsgID.PLAYER_BORN, ID));
         info = GameController.Instance.InfoManager;
         animator = GetComponent<Animator>();

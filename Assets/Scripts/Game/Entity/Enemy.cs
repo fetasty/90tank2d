@@ -36,6 +36,10 @@ public class Enemy : MonoBehaviour {
     private bool isMove;
     private GameInfoManager info;
     private void Start() {
+        GameObject tanks = GameObject.Find("/Tanks");
+        if (tanks != null) {
+            transform.parent = tanks.transform;
+        }
         info = GameController.Instance.InfoManager;
         GameController.Instance.PostMsg(new Msg(MsgID.ENEMY_BORN, Type));
         animator = GetComponent<Animator>();
