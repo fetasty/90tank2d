@@ -9,6 +9,7 @@ public enum MsgID {
     GAME_PAUSE,         // 游戏暂停 null
     GAME_RESUME,        // 游戏暂停恢复 null
     GAME_RETRY,         // 重新开始 null
+    GAME_INFO_UPDATE,   // 游戏数据刷新
     GAME_WIN,           // 游戏胜利 null
     GAME_OVER,          // 游戏结束 null
     ENEMY_SPAWN,        // 敌人spawner生成 Spawner

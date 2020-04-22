@@ -89,22 +89,23 @@ public class GameInfoManager : MonoBehaviour {
     public float EnemySpawnPointWaitTime { get { return enemySpawnPointWaitTime; } }
     public bool CanSpawnPlayer { get { return SpawnedPlayerCount < PlayerTankCount; } }
     public int LeftEnemyCount { get { return totalEnemyCount - SpawnedEnemyCount; } }
-    private void Clear() {
+    private void ClearData() {
         AliveEnemyCount = 0;
         AlivePlayerCount = 0;
         SpawnedEnemyCount = 0;
         SpawnedPlayerCount = 0;
         KilledEnemyCount = 0;
         PlayerTankCount = initialPlayerTankCount;
+        IsGamePlaying = true;
+        IsGamePause = false;
         bonusStopTimer = 0f;
+        GameController.Instance.PostMsg(new Msg(MsgID.GAME_INFO_UPDATE, null));
     }
     public void OnMsgGameStart(Msg msg) {
-        Clear();
-        IsGamePlaying = true;
+        ClearData();
     }
     public void OnMsgGameRetry(Msg msg) {
-        Clear();
-        IsGamePlaying = true;
+        ClearData();
     }
     public void OnMsgGamePause(Msg msg) {
         IsGamePause = true;

@@ -27,6 +27,7 @@ public class TankManager : MonoBehaviour {
         GameController.Instance.AddListener(MsgID.PLAYER_DIE, OnMsgPlayerDie);
         GameController.Instance.AddListener(MsgID.BONUS_BOOM_TRIGGER, OnMsgBonusBoomTrigger);
         GameController.Instance.AddListener(MsgID.BONUS_TANK_TRIGGER, OnMsgBonusTankTrigger);
+        GameController.Instance.AddListener(MsgID.GAME_RETRY, OnMsgGameRetry);
     }
     private void Update() {
         if (info.IsGamePause) { return; }
@@ -128,13 +129,8 @@ public class TankManager : MonoBehaviour {
             enemySpawnPointTimers[i] = 0f;
         }
     }
-    /// <summary>
-    /// 接收到游戏开始事件
-    /// </summary>
-    public void OnMsgGameStart(Msg msg) {
-        Clear();
-        EnemyInitialSpawn();
-        GameMode mode = (GameMode) msg.Param;
+    private void PlayerInitialSpawn() {
+        GameMode mode = Global.Instance.SelectedGameMode;
         if (mode == GameMode.SINGLE) {
             SpawnPlayer(0);
         } else if (mode == GameMode.DOUBLE) {
@@ -144,6 +140,19 @@ public class TankManager : MonoBehaviour {
             // todo 局域网游戏
             Debug.Log("Start Lan Game!!!");
         }
+    }
+    /// <summary>
+    /// 接收到游戏开始事件
+    /// </summary>
+    public void OnMsgGameStart(Msg msg) {
+        Clear();
+        EnemyInitialSpawn();
+        PlayerInitialSpawn();
+    }
+    private void OnMsgGameRetry(Msg msg) {
+        Clear();
+        EnemyInitialSpawn();
+        PlayerInitialSpawn();
     }
     public void OnMsgPlayerDie(Msg msg) {
         int playerID = (int)msg.Param;

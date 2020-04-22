@@ -22,12 +22,17 @@ public class MapManager : MonoBehaviour {
     private Vector3 HomeWallCheckPoint { get; } = new Vector3(0f, -5.5f, 0f);
     private Vector3 HomeWallCheckSize { get; } = new Vector2(2.8f, 1.8f);
     private void Start() {
-        GameController.Instance.AddListener(MsgID.BONUS_SPAWN, msg => SpawnBonus());
+        GameController.Instance.AddListener(MsgID.BONUS_SPAWN, OnMsgSpawnBonus);
+        GameController.Instance.AddListener(MsgID.GAME_RETRY, OnMsgGameRetry);
     }
-    public void SpawnBonus() {
+    private void OnMsgSpawnBonus(Msg msg) {
         float x = (float) Random.Range(-MAP_RADIUS + 1, MAP_RADIUS - 1);
         float y = (float) Random.Range(-MAP_RADIUS + 2, MAP_RADIUS - 1);
         Instantiate(BonusPrefab, new Vector3(x, y, 1f), Quaternion.identity);
+    }
+    private void OnMsgGameRetry(Msg msg) {
+        ClearMap();
+        // todo create map
     }
     public void ClearMap() {
         // 清理地图

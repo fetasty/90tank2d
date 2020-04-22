@@ -40,6 +40,11 @@ public class GameController : MonoBehaviour {
         MsgUpdate();
         PauseUpdate();
     }
+    private void OnApplicationFocus(bool focusStatus) {
+        if (!focusStatus && infoManager.IsGamePlaying && !infoManager.IsGamePause) {
+            PostMsg(new Msg(MsgID.GAME_PAUSE, null));
+        }
+    }
     private void PauseUpdate() {
         if (infoManager.IsGamePause || !infoManager.IsGamePlaying) { return; }
         if (!Global.Instance.IsMobile && Global.Instance.SelectedGameMode != GameMode.LAN) {

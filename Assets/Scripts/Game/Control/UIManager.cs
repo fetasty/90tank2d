@@ -23,15 +23,17 @@ public class UIManager : MonoBehaviour {
     private enum ClickType { PAUSE, RESUME, RETRY, BACK, EXIT }
     private void Start() {
         info = GameController.Instance.InfoManager;
-        GameController.Instance.AddListener(MsgID.ENEMY_SPAWN, msg => UpdateEnemyCount());
-        GameController.Instance.AddListener(MsgID.ENEMY_DIE, msg => UpdateKilledCount());
-        GameController.Instance.AddListener(MsgID.PLAYER_SPAWN, msg => UpdatePlayerTankCount());
-        GameController.Instance.AddListener(MsgID.GAME_START, msg => OnMsgGameStart());
-        GameController.Instance.AddListener(MsgID.GAME_PAUSE, msg => OnMsgGamePause());
-        GameController.Instance.AddListener(MsgID.GAME_OVER, msg => OnMsgGameOver());
-        GameController.Instance.AddListener(MsgID.GAME_WIN, msg => OnMsgGameWin());
-        GameController.Instance.AddListener(MsgID.BONUS_TANK_TRIGGER, msg => UpdatePlayerTankCount());
-        GameController.Instance.AddListener(MsgID.GAME_RESUME, msg => OnMsgGameResume());
+        GameController.Instance.AddListener(MsgID.ENEMY_SPAWN, OnMsgEnemySpawn);
+        GameController.Instance.AddListener(MsgID.ENEMY_DIE, OnMsgEnemyDie);
+        GameController.Instance.AddListener(MsgID.PLAYER_SPAWN, OnMsgPlayerTankChange);
+        GameController.Instance.AddListener(MsgID.GAME_PAUSE, OnMsgGamePause);
+        GameController.Instance.AddListener(MsgID.GAME_OVER, OnMsgGameOver);
+        GameController.Instance.AddListener(MsgID.GAME_WIN, OnMsgGameWin);
+        GameController.Instance.AddListener(MsgID.BONUS_TANK_TRIGGER, OnMsgPlayerTankChange);
+        GameController.Instance.AddListener(MsgID.GAME_RESUME, OnMsgGameResume);
+        GameController.Instance.AddListener(MsgID.GAME_INFO_UPDATE, OnMsgInfoUpdate);
+        GameController.Instance.AddListener(MsgID.GAME_START, OnMsgGameStart);
+        GameController.Instance.AddListener(MsgID.GAME_RETRY, OnMsgGameRetry);
         resumeBtn.onClick.AddListener(() => OnClick(ClickType.RESUME));
         retryBtn.onClick.AddListener(() => OnClick(ClickType.RETRY));
         backBtn.onClick.AddListener(() => OnClick(ClickType.BACK));
@@ -48,24 +50,25 @@ public class UIManager : MonoBehaviour {
     private void UpdatePlayerTankCount() {
         tankCountText.text = $"玩家坦克: {info.PlayerTankCount - info.SpawnedPlayerCount}";
     }
+    private void UpdateOperationUI() {
+        SetPauseMask(info.IsGamePlaying && info.IsGamePause);
+        SetResumeBtn(info.IsGamePlaying && info.IsGamePause);
+        SetOperations(info.IsGamePause || !info.IsGamePlaying);
+        SetPauseBtn(info.IsGamePlaying && info.IsGamePause);
+    }
     private void SetPauseMask(bool active) {
         pauseMask.SetActive(active);
     }
     private void SetOperations(bool active) {
         operations.SetActive(active);
     }
-    private void SetPauseBtn(bool isGamePlaying) {
+    private void SetPauseBtn(bool active) {
         if (Global.Instance.IsMobile) {
-            pauseBtn.gameObject.SetActive(isGamePlaying);
+            pauseBtn.gameObject.SetActive(active);
         }
     }
-    private void InitialUI() {
-        UpdateEnemyCount();
-        UpdateKilledCount();
-        UpdatePlayerTankCount();
-        SetPauseMask(false);
-        SetOperations(false);
-        SetPauseBtn(true);
+    private void SetResumeBtn(bool active) {
+        resumeBtn.gameObject.SetActive(active);
     }
     private void OnClick(ClickType type) {
         switch (type) {
@@ -80,7 +83,6 @@ public class UIManager : MonoBehaviour {
                 break;
             case ClickType.RETRY:
                 GameController.Instance.PostMsg(new Msg(MsgID.GAME_RETRY, null));
-                InitialUI();
                 break;
             case ClickType.PAUSE:
                 GameController.Instance.PostMsg(new Msg(MsgID.GAME_PAUSE, null));
@@ -89,32 +91,46 @@ public class UIManager : MonoBehaviour {
                 break;
         }
     }
-    public void OnMsgGamePause() {
-        SetPauseMask(true);
-        SetOperations(true);
-        resumeBtn.gameObject.SetActive(true);
-        SetPauseBtn(false);
+    private void DestroyGameEnd() {
+        if (gameEnd != null) {
+            Destroy(gameEnd);
+            gameEnd = null;
+        }
     }
-    private void OnMsgGameResume() {
-        SetOperations(false);
-        SetPauseMask(false);
-        SetPauseBtn(true);
+    private void OnMsgInfoUpdate(Msg msg) {
+        UpdateEnemyCount();
+        UpdateKilledCount();
+        UpdatePlayerTankCount();
     }
-    public void OnMsgGameStart() {
-        InitialUI();
+    private void OnMsgGameStart(Msg msg) {
+        DestroyGameEnd();
+        UpdateOperationUI();
     }
-    public void OnMsgGameWin() {
-        gameEnd = Instantiate(GameWinPrefab, Vector3.zero, Quaternion.identity);
-        OnMsgGameEnd();
+    private void OnMsgGameRetry(Msg msg) {
+        DestroyGameEnd();
+        UpdateOperationUI();
     }
-    public void OnMsgGameOver() {
-        gameEnd = Instantiate(GameOverPrefab, Vector3.zero, Quaternion.identity);
-        OnMsgGameEnd();
+    private void OnMsgPlayerTankChange(Msg msg) {
+        UpdatePlayerTankCount();
     }
-    public void OnMsgGameEnd() {
-        SetPauseMask(false);
-        SetOperations(true);
-        resumeBtn.gameObject.SetActive(false);
-        SetPauseBtn(false);
+    private void OnMsgEnemyDie(Msg msg) {
+        UpdateKilledCount();
+    }
+    private void OnMsgEnemySpawn(Msg msg) {
+        UpdateEnemyCount();
+    }
+    public void OnMsgGamePause(Msg msg) {
+        UpdateOperationUI();
+    }
+    private void OnMsgGameResume(Msg msg) {
+        UpdateOperationUI();
+    }
+    public void OnMsgGameWin(Msg msg) {
+        gameEnd = Instantiate(GameWinPrefab, new Vector3(0f, 3f, 0f), Quaternion.identity);
+        UpdateOperationUI();
+    }
+    public void OnMsgGameOver(Msg msg) {
+        gameEnd = Instantiate(GameOverPrefab, new Vector3(0f, 3f, 0f), Quaternion.identity);
+        UpdateOperationUI();
     }
 }
