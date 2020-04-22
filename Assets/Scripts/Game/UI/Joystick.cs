@@ -11,6 +11,7 @@ public class Joystick : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     }
     public void OnBeginDrag(PointerEventData eventData) {
         stickRect.anchoredPosition = eventData.position - backRect.anchoredPosition;
+        backRect.position = eventData.position;
         OnChangeDirection();
     }
     public void OnDrag(PointerEventData eventData) {
