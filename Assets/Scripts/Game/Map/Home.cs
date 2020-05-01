@@ -9,16 +9,14 @@ public class Home : MonoBehaviour
     public GameObject explosionPrefab;
     private SpriteRenderer spriteRender;
     private BoxCollider2D boxCollider;
-    private GameInfoManager info;
     void Start()
     {
-        info = GameController.Instance.InfoManager;
         spriteRender = GetComponent<SpriteRenderer>();
         boxCollider = GetComponent<BoxCollider2D>();
     }
     public bool TakeDamage() {
-        if (!info.IsGamePlaying) { return false; }
-        GameController.Instance.PostMsg(new Msg(MsgID.HOME_DESTROY, null));
+        if (!GameData.isGamePlaying) { return false; }
+        Messager.Instance.Send(MessageID.HOME_DESTROY);
         spriteRender.sprite = broken;
         Destroy(boxCollider);
         Instantiate(explosionPrefab, transform.position, Quaternion.identity);

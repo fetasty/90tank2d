@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 9078945299525892982}
   - component: {fileID: 1727022257812057367}
   - component: {fileID: 1072149191291083752}
+  - component: {fileID: 7693763626612668008}
   m_Layer: 0
   m_Name: Home
   m_TagString: Home
@@ -124,3 +125,18 @@ MonoBehaviour:
   broken: {fileID: 21300012, guid: 529e000d42d32de49bc475716ba7ae37, type: 3}
   explosionPrefab: {fileID: 1126545928910412902, guid: 21dfbb7572f722e4ea88e9dc0d8205f8,
     type: 3}
+--- !u!114 &7693763626612668008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2292585678776664919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  serverOnly: 0
+  m_AssetId: 

@@ -7,9 +7,9 @@ using System;
 public class MobileFire : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     public void OnPointerDown(PointerEventData eventData) {
-        GameController.Instance.PostMsg(new Msg(MsgID.MOBILE_FIRE_INPUT, true));
+        Messager.Instance.Send<bool>(MessageID.MOBILE_FIRE_INPUT, true);
     }
     public void OnPointerUp(PointerEventData eventData) {
-        GameController.Instance.PostMsg(new Msg(MsgID.MOBILE_FIRE_INPUT, false));
+        Messager.Instance.Send<bool>(MessageID.MOBILE_FIRE_INPUT, false);
     }
 }

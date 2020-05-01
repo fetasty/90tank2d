@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8449287438518319044}
   - component: {fileID: 1059150735}
   - component: {fileID: 47814915436262391}
+  - component: {fileID: 1903654847516550811}
   m_Layer: 0
   m_Name: Bonus
   m_TagString: Bonus
@@ -148,3 +149,18 @@ MonoBehaviour:
   - {fileID: 21300004, guid: d532de5e6df7ce948a5f9d07897aa865, type: 3}
   lifeTime: 30
   warnLifeTime: 5
+--- !u!114 &1903654847516550811
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778515222609647085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  serverOnly: 0
+  m_AssetId: 

@@ -29,20 +29,20 @@ public class GameInfoManager : MonoBehaviour {
     private float bonusStopTimer;
 
     private void Start() {
-        InitParam();
-        GameController.Instance.AddListener(MsgID.GAME_START, OnMsgGameStart);
-        GameController.Instance.AddListener(MsgID.GAME_PAUSE, OnMsgGamePause);
-        GameController.Instance.AddListener(MsgID.GAME_OVER, OnMsgGameEnd);
-        GameController.Instance.AddListener(MsgID.GAME_WIN, OnMsgGameEnd);
-        GameController.Instance.AddListener(MsgID.ENEMY_SPAWN, OnMsgEnemySpawn);
-        GameController.Instance.AddListener(MsgID.ENEMY_DIE, OnMsgEnemyDie);
-        GameController.Instance.AddListener(MsgID.PLAYER_SPAWN, OnMsgPlayerSpawn);
-        GameController.Instance.AddListener(MsgID.PLAYER_DIE, OnMsgPlayerDie);
-        GameController.Instance.AddListener(MsgID.BONUS_TANK_TRIGGER, OnMsgBonusTank);
-        GameController.Instance.AddListener(MsgID.BONUS_STOP_WATCH_TRIGGER, OnMsgBonusPause);
-        GameController.Instance.AddListener(MsgID.GAME_RESUME, OnMsgGameResume);
-        GameController.Instance.AddListener(MsgID.GAME_RETRY, OnMsgGameRetry);
-        GameController.Instance.AddListener(MsgID.HOME_DESTROY, OnMsgHomeDestroy);
+        // InitParam();
+        // Messager.Instance.Listen(MessageID.GAME_START, OnMsgGameStart);
+        // Messager.Instance.Listen(MessageID.GAME_PAUSE, OnMsgGamePause);
+        // Messager.Instance.Listen(MessageID.GAME_OVER, OnMsgGameEnd);
+        // Messager.Instance.Listen(MessageID.GAME_WIN, OnMsgGameEnd);
+        // Messager.Instance.Listen(MessageID.ENEMY_SPAWN, OnMsgEnemySpawn);
+        // Messager.Instance.Listen(MessageID.ENEMY_DIE, OnMsgEnemyDie);
+        // Messager.Instance.Listen(MessageID.PLAYER_SPAWN, OnMsgPlayerSpawn);
+        // Messager.Instance.Listen(MessageID.PLAYER_DIE, OnMsgPlayerDie);
+        // Messager.Instance.Listen(MessageID.BONUS_TANK_TRIGGER, OnMsgBonusTank);
+        // Messager.Instance.Listen(MessageID.BONUS_STOP_WATCH_TRIGGER, OnMsgBonusPause);
+        // Messager.Instance.Listen(MessageID.GAME_RESUME, OnMsgGameResume);
+        // Messager.Instance.Listen(MessageID.GAME_RETRY, OnMsgGameRetry);
+        // Messager.Instance.Listen(MessageID.HOME_DESTROY, OnMsgHomeDestroy);
     }
     private void Update() {
         if (bonusStopTimer > 0f) {
@@ -92,8 +92,8 @@ public class GameInfoManager : MonoBehaviour {
     public bool CanSpawnPlayer { get { return SpawnedPlayerCount < PlayerTankCount; } }
     public int LeftEnemyCount { get { return totalEnemyCount - SpawnedEnemyCount; } }
     private void InitParam() {
-        GameMode mode = Global.Instance.SelectedGameMode;
-        if (mode == GameMode.DOUBLE) {
+        TankMode mode = GameData.mode;
+        if (mode == TankMode.DOUBLE) {
             totalEnemyCount += 20;
             maxAliveEnemyCount += 2;
             initialPlayerTankCount += 3;
@@ -110,53 +110,53 @@ public class GameInfoManager : MonoBehaviour {
         IsGamePlaying = true;
         IsGamePause = false;
         bonusStopTimer = 0f;
-        GameController.Instance.PostMsg(new Msg(MsgID.GAME_INFO_UPDATE, null));
+        // GameController.Instance.PostMsg(new Msg(MsgID.GAME_INFO_UPDATE, null));
     }
-    public void OnMsgGameStart(Msg msg) {
+    public void OnMsgGameStart() {
         ClearData();
     }
-    public void OnMsgGameRetry(Msg msg) {
+    public void OnMsgGameRetry() {
         ClearData();
     }
-    public void OnMsgHomeDestroy(Msg msg) {
+    public void OnMsgHomeDestroy() {
         if (IsGamePlaying) {
-            GameController.Instance.PostMsg(new Msg(MsgID.GAME_OVER, null));
+            // GameController.Instance.PostMsg(new Msg(MsgID.GAME_OVER, null));
         }
     }
-    public void OnMsgGamePause(Msg msg) {
+    public void OnMsgGamePause() {
         IsGamePause = true;
     }
-    public void OnMsgGameResume(Msg msg) {
+    public void OnMsgGameResume() {
         IsGamePause = false;
     }
-    public void OnMsgEnemySpawn(Msg msg) {
+    public void OnMsgEnemySpawn() {
         ++SpawnedEnemyCount;
         ++AliveEnemyCount;
     }
-    public void OnMsgGameEnd(Msg msg) {
+    public void OnMsgGameEnd() {
         IsGamePlaying = false;
     }
-    public void OnMsgEnemyDie(Msg msg) {
+    public void OnMsgEnemyDie() {
         --AliveEnemyCount;
         ++KilledEnemyCount;
         if (KilledEnemyCount >= totalEnemyCount) {
-            GameController.Instance.PostMsg(new Msg(MsgID.GAME_WIN, null));
+            // GameController.Instance.PostMsg(new Msg(MsgID.GAME_WIN, null));
         }
     }
-    public void OnMsgPlayerSpawn(Msg msg) {
+    public void OnMsgPlayerSpawn() {
         ++AlivePlayerCount;
         ++SpawnedPlayerCount;
     }
-    public void OnMsgPlayerDie(Msg msg) {
+    public void OnMsgPlayerDie() {
         --AlivePlayerCount;
         if (!CanSpawnPlayer && AlivePlayerCount <= 0) {
-            GameController.Instance.PostMsg(new Msg(MsgID.GAME_OVER, null));
+            // GameController.Instance.PostMsg(new Msg(MsgID.GAME_OVER, null));
         }
     }
-    public void OnMsgBonusTank(Msg msg) {
+    public void OnMsgBonusTank() {
         ++PlayerTankCount;
     }
-    public void OnMsgBonusPause(Msg msg) {
+    public void OnMsgBonusPause() {
         bonusStopTimer = bonusStopTime;
     }
 }

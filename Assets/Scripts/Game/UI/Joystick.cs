@@ -23,6 +23,6 @@ public class Joystick : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         OnChangeDirection();
     }
     private void OnChangeDirection() {
-        GameController.Instance.PostMsg(new Msg(MsgID.MOBILE_MOVE_INPUT, stickRect.anchoredPosition));
+        Messager.Instance.Send<Vector2>(MessageID.MOBILE_MOVE_INPUT, stickRect.anchoredPosition);
     }
 }

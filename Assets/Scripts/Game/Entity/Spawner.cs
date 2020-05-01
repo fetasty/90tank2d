@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
-public class Spawner : MonoBehaviour {
+public class Spawner : NetworkBehaviour {
     public GameObject playerPrefab;
     public GameObject enemyPrefab;
     public float spawnTime = 1f;
@@ -18,13 +19,16 @@ public class Spawner : MonoBehaviour {
         if (spawners != null) {
             transform.parent = spawners.transform;
         }
-        if (SpawnPlayer) {
-            GameController.Instance.PostMsg(new Msg(MsgID.PLAYER_SPAWN, this));
-        } else {
-            GameController.Instance.PostMsg(new Msg(MsgID.ENEMY_SPAWN, this));
+        if(isServer) {
+            if (SpawnPlayer) {
+                Messager.Instance.Send<int>(MessageID.PLAYER_SPAWN, PlayerID);
+            } else {
+                Messager.Instance.Send(MessageID.ENEMY_SPAWN);
+            }
+            spawnTimer = spawnTime;
         }
-        spawnTimer = spawnTime;
     }
+    [ServerCallback]
     private void Update() {
         SpawnUpdate();
     }
@@ -42,6 +46,7 @@ public class Spawner : MonoBehaviour {
         this.SpawnPlayer = true;
         this.PlayerID = id;
     }
+    [ServerCallback]
     private void SpawnUpdate() {
         if (spawnTimer > 0f) {
             spawnTimer -= Time.deltaTime;
@@ -50,13 +55,15 @@ public class Spawner : MonoBehaviour {
             if (SpawnPlayer) {
                 GameObject obj = Instantiate(playerPrefab, transform.position, Quaternion.identity);
                 Player player = obj.GetComponent<Player>();
-                player.Set(PlayerID);
+                player.id = PlayerID;
+                NetworkServer.AddPlayerForConnection(GameData.networkPlayers[PlayerID], obj);
             } else {
                 GameObject obj = Instantiate(enemyPrefab, transform.position, Quaternion.Euler(0f, 0f, 180f));
                 Enemy enemy = obj.GetComponent<Enemy>();
                 enemy.Set(EnemyType, EnemyBonus);
+                NetworkServer.Spawn(obj);
             }
-            Destroy(gameObject);
+            NetworkServer.Destroy(gameObject);
         }
     }
 }

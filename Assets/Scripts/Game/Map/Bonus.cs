@@ -22,37 +22,37 @@ public class Bonus : MonoBehaviour
         lifeTimer = lifeTime;
     }
     private void Update() {
-        if (GameController.Instance.InfoManager.IsGamePause) { return; }
+        // if (GameController.Instance.InfoManager.IsGamePause) { return; }
         LifeUpdate();
     }
     private void OnTriggerEnter2D(Collider2D other) {
         if (other.tag == "Player") {
             Player p = other.GetComponent<Player>();
-            Msg msg = new Msg(MsgID.BONUS_BOOM_TRIGGER, p.ID);
-            switch (Type) {
-                case BonusType.BOOM:
-                    msg.ID = MsgID.BONUS_BOOM_TRIGGER;
-                    break;
-                case BonusType.LEVEL:
-                    msg.ID = MsgID.BONUS_LEVEL_TRIGGER;
-                    break;
-                case BonusType.SHIELD:
-                    msg.ID = MsgID.BONUS_SHIELD_TRIGGER;
-                    break;
-                case BonusType.SHOVEL:
-                    msg.ID = MsgID.BONUS_SHOVEL_TRIGGER;
-                    break;
-                case BonusType.STOP_WATCH:
-                    msg.ID = MsgID.BONUS_STOP_WATCH_TRIGGER;
-                    break;
-                case BonusType.TANK:
-                    msg.ID = MsgID.BONUS_TANK_TRIGGER;
-                    break;
-                default:
-                    Destroy(gameObject);
-                    return;
-            }
-            GameController.Instance.PostMsg(msg);
+            // Msg msg = new Msg(MsgID.BONUS_BOOM_TRIGGER, p.ID);
+            // switch (Type) {
+            //     case BonusType.BOOM:
+            //         msg.ID = MsgID.BONUS_BOOM_TRIGGER;
+            //         break;
+            //     case BonusType.LEVEL:
+            //         msg.ID = MsgID.BONUS_LEVEL_TRIGGER;
+            //         break;
+            //     case BonusType.SHIELD:
+            //         msg.ID = MsgID.BONUS_SHIELD_TRIGGER;
+            //         break;
+            //     case BonusType.SHOVEL:
+            //         msg.ID = MsgID.BONUS_SHOVEL_TRIGGER;
+            //         break;
+            //     case BonusType.STOP_WATCH:
+            //         msg.ID = MsgID.BONUS_STOP_WATCH_TRIGGER;
+            //         break;
+            //     case BonusType.TANK:
+            //         msg.ID = MsgID.BONUS_TANK_TRIGGER;
+            //         break;
+            //     default:
+            //         Destroy(gameObject);
+            //         return;
+            // }
+            // GameController.Instance.PostMsg(msg);
             AudioSource.PlayClipAtPoint(bonusAudio, transform.position);
             Destroy(gameObject);
         }

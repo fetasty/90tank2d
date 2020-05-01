@@ -1,6 +1,7 @@
 using UnityEngine;
+using Mirror;
 
-public class Enemy : MonoBehaviour {
+public class Enemy : NetworkBehaviour {
     public const int MIN_ENEMY_TYPE = 0;
     public const int MAX_ENEMY_TYPE = 4;
 
@@ -14,67 +15,73 @@ public class Enemy : MonoBehaviour {
     public float maxMoveTime = 3.0f;
 
     private Animator animator;
-    public int Type {
-        get { return type; }
-        set {
-            if (value < 0 || value > 4) { return; }
-            type = value;
-            animator.SetInteger("type", type);
-        }
+    [SyncVar(hook = nameof(TypeChange))]
+    private int type;
+    private void TypeChange(int _, int newType) {
+        if (animator != null) { animator.SetInteger("type", newType); }
     }
-    public bool Bonus {
+    [SyncVar(hook = nameof(BonusChange))]
+    private bool bonus;
+    private void BonusChange(bool _, bool newBonus) {
+        if (animator != null) { animator.SetBool("bonus", newBonus); }
+    }
+    private bool Bonus {
         get { return bonus; }
         set {
             bonus = value;
-            animator.SetBool("bonus", bonus);
+            if (animator != null) { animator.SetBool("bonus", bonus); }
         }
     }
-    private int type;
-    private bool bonus;
     private float fireTimer;
     private float moveTimer;
     private bool isMove;
-    private GameInfoManager info;
     private void Start() {
         GameObject tanks = GameObject.Find("/Tanks");
         if (tanks != null) {
             transform.parent = tanks.transform;
         }
-        info = GameController.Instance.InfoManager;
-        GameController.Instance.PostMsg(new Msg(MsgID.ENEMY_BORN, Type));
+        // info = GameController.Instance.InfoManager;
+        // GameController.Instance.PostMsg(new Msg(MsgID.ENEMY_BORN, Type));
         animator = GetComponent<Animator>();
-        animator.SetInteger("type", Type);
-        animator.SetBool("bonus", Bonus);
-        if (type == 1) { moveSpeed *= 2f; }
-        fireTimer = Random.Range(minFireTime, maxFireTime);
-        moveTimer = Random.Range(minMoveTime, maxMoveTime / 2f);
+        animator.SetInteger("type", type);
+        animator.SetBool("bonus", bonus);
+        if (isServer) {
+            if (type == 1) { moveSpeed *= 2f; }
+            fireTimer = Random.Range(minFireTime, maxFireTime);
+            moveTimer = Random.Range(minMoveTime, maxMoveTime / 2f);
+        }
     }
+    [ServerCallback]
     private void Update() {
-        if (info.IsGamePause || info.IsBonusStop) { return; }
+        if (GameData.isGamePausing /*|| GameData.IsBonusStop*/) { return; }
         Fire();
     }
+    [ServerCallback]
     private void FixedUpdate() {
-        if (info.IsGamePause || info.IsBonusStop) { return; }
+        if (GameData.isGamePausing /*|| GameData.IsBonusStop*/) { return; }
         Move();
     }
+    [ServerCallback]
     public bool TakeDamage() {
-        if (Bonus) {
-            GameController.Instance.PostMsg(new Msg(MsgID.BONUS_SPAWN, null));
-            Bonus = false;
+        if (bonus) {
+            Messager.Instance.Send(MessageID.BONUS_SPAWN);
+            bonus = false;
             return false;
         }
-        if (Type > 2) {
-            --Type;
+        if (type > 2) {
+            --type;
             return false;
         }
         Die();
         return true;
     }
+    [ServerCallback]
     public void Die() {
-        GameController.Instance.PostMsg(new Msg(MsgID.ENEMY_DIE, Type));
-        Instantiate(explosionPrefab, transform.position, Quaternion.identity);
-        Destroy(gameObject);
+        Messager.Instance.Send(MessageID.ENEMY_DIE);
+        NetworkServer.Spawn(Instantiate(explosionPrefab, transform.position, Quaternion.identity));
+        NetworkServer.Destroy(gameObject);
     }
+    [ServerCallback]
     private void Fire() {
         if (fireTimer > 0.0f) {
             fireTimer -= Time.deltaTime;
@@ -82,10 +89,12 @@ public class Enemy : MonoBehaviour {
         if (fireTimer <= 0.0f) {
             GameObject obj = Instantiate(bulletPrefab, transform.position, transform.rotation);
             Bullet bullet = obj.GetComponent<Bullet>();
-            bullet.Set(false, 0);
+            bullet.Set(false, type > 2 ? 1 : 0);
+            NetworkServer.Spawn(obj);   // 服务器生成子弹
             fireTimer = Random.Range(minFireTime, maxFireTime);
         }
     }
+    [ServerCallback]
     private void Move() {
         if (moveTimer > 0.0f) {
             moveTimer -= Time.fixedDeltaTime;

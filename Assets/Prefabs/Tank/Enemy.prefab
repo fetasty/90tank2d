@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 2347001251027955413}
   - component: {fileID: 2347001251027955410}
   - component: {fileID: 2347001251027955411}
+  - component: {fileID: -3078585591752778954}
+  - component: {fileID: 1713536226592416620}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -163,6 +165,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ec8955937e207f42a4e92e17817721a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
   bulletPrefab: {fileID: 1058526958572749233, guid: c606a88c77572bb419164c068204f9fb,
     type: 3}
   explosionPrefab: {fileID: 1126545928910412902, guid: 21dfbb7572f722e4ea88e9dc0d8205f8,
@@ -172,3 +176,36 @@ MonoBehaviour:
   maxFireTime: 3
   minMoveTime: 0.5
   maxMoveTime: 5
+--- !u!114 &-3078585591752778954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2347001251027955423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  serverOnly: 0
+  m_AssetId: 
+--- !u!114 &1713536226592416620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2347001251027955423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f74aedd71d9a4f55b3ce499326d45fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0
+  clientAuthority: 0
+  localPositionSensitivity: 0.01
+  localRotationSensitivity: 45
+  localScaleSensitivity: 1

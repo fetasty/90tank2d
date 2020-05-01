@@ -1,48 +1,36 @@
 using UnityEngine.SceneManagement;
 using UnityEngine;
-public enum GameMode {
-    SINGLE, // 单人游戏
-    DOUBLE, // 本地双人游戏
-    LAN     // 局域网游戏
-}
+using Mirror;
 /// <summary>
-/// 全局信息管理
+/// 场景切换与退出
 /// </summary>
 public class Global
 {
-    public static Global Instance { get; } = new Global();
-    public GameMode SelectedGameMode { get; set; }
-    public const string WelcomeScene = "Welcome";
-    public const string GameScene = "Game";
     private Global() { }
-
     /// <summary>
     /// 退出游戏/editor运行模式
     /// </summary>
-    public void Quit() {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+    public static void Quit() {
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
     }
-    /// <summary>
-    /// 当前是否为移动平台
-    /// </summary>
-    /// <returns>true说明在移动平台上(Android/iOS)</returns>
-    public bool IsMobile {
-        get {
-            #if UNITY_IOS || UNITY_ANDROID
-                return true;
-            #else
-                return false;
-            #endif
-        }
+    public static void EnterGame() {
+        NetworkManager.singleton.ServerChangeScene(GameData.gameScene);
+        GameData.currentScene = GameData.gameScene; // manager.networkSceneName
     }
-    public void EnterGame() {
-        SceneManager.LoadScene(GameScene); // 这里很快, 直接同步加载了
+    public static void EnterRoomOffline() {
+        SceneManager.LoadScene(GameData.roomOfflineScene);
+        GameData.currentScene = GameData.roomOfflineScene;
     }
-    public void BackToWelcome() {
-        SceneManager.LoadScene(WelcomeScene);
+    public static void EnterRoomOnline() {
+        SceneManager.LoadScene(GameData.roomOnlineScene);
+        GameData.currentScene = GameData.roomOnlineScene;
+    }
+    public static void EnterWelcome() {
+        SceneManager.LoadScene(GameData.welcomeScene);
+        GameData.currentScene = GameData.welcomeScene;
     }
 }

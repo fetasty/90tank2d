@@ -1,82 +1,34 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using Mirror;
 
-public class Msg {
-    public MsgID ID { get; set; }
-    public System.Object Param { get; set; }
-    public Msg(MsgID msgID, System.Object param) {
-        ID = msgID;
-        Param = param;
-    }
-}
-public delegate void MsgListener(Msg msg); // 消息监听器
 /// <summary>
-/// 游戏逻辑管理器, 同时作为消息中心
+/// ServerOnly!!
+/// 游戏逻辑
 /// </summary>
-public class GameController : MonoBehaviour {
-    public static GameController Instance { get; private set; }
-    public GameInfoManager InfoManager { get { return infoManager; } }
-    private Dictionary<MsgID, MsgListener> msgDic = new Dictionary<MsgID, MsgListener>();    // 消息监听器字典
-    private Queue<Msg> msgs = new Queue<Msg>(); // 消息队列
-
-    private UIManager uiManager;
-    private MapManager mapManager;
-    private TankManager tankManager;
-    private GameInfoManager infoManager;
-
-    private void Awake() {
-        Instance = this;
-    }
+[DisallowMultipleComponent]
+public class GameController : NetworkBehaviour {
     private void Start() {
-        infoManager = GetComponent<GameInfoManager>();
-        uiManager = GetComponent<UIManager>();
-        mapManager = GetComponent<MapManager>();
-        tankManager = GetComponent<TankManager>();
-        PostMsg(new Msg(MsgID.GAME_START, Global.Instance.SelectedGameMode));
+        if (isServer) { Invoke(nameof(StartGame), 1f); }
+    }
+    [ServerCallback]
+    private void StartGame() {
+        // 通知服务端的其它模块, 游戏开始
+        Messager.Instance.Send(MessageID.GAME_START);
     }
     private void Update() {
-        MsgUpdate();
         PauseUpdate();
     }
     private void OnApplicationFocus(bool focusStatus) {
-        if (!focusStatus && infoManager.IsGamePlaying && !infoManager.IsGamePause) {
-            PostMsg(new Msg(MsgID.GAME_PAUSE, null));
+        if (!focusStatus && GameData.isGamePlaying && !GameData.isGamePausing) {
+            Messager.Instance.Send(MessageID.GAME_PAUSE);
         }
     }
     private void PauseUpdate() {
-        if (infoManager.IsGamePause || !infoManager.IsGamePlaying) { return; }
-        if (!Global.Instance.IsMobile && Global.Instance.SelectedGameMode != GameMode.LAN) {
-            if (Input.GetAxisRaw("Cancel") > 0f) {
-                GameController.Instance.PostMsg(new Msg(MsgID.GAME_PAUSE, null));
+        if (GameData.isGamePausing || !GameData.isGamePlaying) { return; }
+        if (!GameData.isMobile) {
+            if (Input.GetAxisRaw("Cancel") > 0f) { // todo 网络游戏虽然不能暂停, 但是可以调出菜单的
+                Messager.Instance.Send(MessageID.GAME_PAUSE);
             }
         }
-    }
-    private void MsgUpdate() {
-        while(msgs.Count > 0) {
-            Msg msg = msgs.Dequeue();
-            if (msgDic.ContainsKey(msg.ID) && msgDic[msg.ID] != null) {
-                msgDic[msg.ID](msg);
-            }
-        }
-    }
-    public void AddListener(MsgID msgID, MsgListener listener) {
-        if (listener == null) { return; }
-        if (!msgDic.ContainsKey(msgID)) {
-            msgDic.Add(msgID, listener);
-        } else {
-            msgDic[msgID] += listener;
-        }
-    }
-    public void RemoveListener(MsgID msgID, MsgListener listener) {
-        if (listener == null) { return; }
-        if (msgDic.ContainsKey(msgID)) {
-            if (msgDic[msgID] == null) { msgDic.Remove(msgID); }
-            else { msgDic[msgID] -= listener; }
-        }
-    }
-    public void PostMsg(Msg msg) {
-        msgs.Enqueue(msg);
     }
 }

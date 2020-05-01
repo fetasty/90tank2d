@@ -8,13 +8,13 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
-        GameController.Instance.AddListener(MsgID.GAME_START, OnMsgGameStart);
-        GameController.Instance.AddListener(MsgID.GAME_RETRY, OnMsgGameRetry);
+        Messager.Instance.Listen(MessageID.GAME_START, OnMsgGameStart);
+        Messager.Instance.Listen(MessageID.GAME_RETRY, OnMsgGameRetry);
     }
-    private void OnMsgGameStart(Msg msg) {
+    private void OnMsgGameStart() {
         audioSource.Play();
     }
-    private void OnMsgGameRetry(Msg msg) {
+    private void OnMsgGameRetry() {
         audioSource.Play();
     }
 }
