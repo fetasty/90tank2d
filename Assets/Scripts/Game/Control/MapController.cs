@@ -130,13 +130,11 @@ public class MapController : NetworkBehaviour {
     private Vector3 HomeSpawnPoint { get; } = new Vector3(0f, -6f, 0f);
     private Vector3 HomeWallCheckPoint { get; } = new Vector3(0f, -5.5f, 0f);
     private Vector3 HomeWallCheckSize { get; } = new Vector2(2.8f, 1.8f);
-    private GameObject maps;
     private bool[,] existBlocks = new bool[MAP_RADIUS * 2 + 1, MAP_RADIUS * 2 + 1];
     private MapInfo mapInfo = new MapInfo();
     private float homeWallTimer;
     private bool homeWallAnim; // 动画是否播放过
     private void Start() {
-        maps = GameObject.Find("/Maps");
         if (isServer) {
             // 事件监听
             Messager.Instance.Listen(MessageID.BONUS_SPAWN, OnMsgSpawnBonus);
@@ -146,26 +144,39 @@ public class MapController : NetworkBehaviour {
         }
     }
     private void Update() {
-        HomeWallUpdate();
+        if (isServer) {
+            HomeWallUpdate();
+        }
     }
+    [ServerCallback]
     private void HomeWallUpdate() {
         if (homeWallTimer > 0f) {
             homeWallTimer -= Time.deltaTime;
             if (homeWallTimer < 5f && !homeWallAnim) {
                 homeWallAnim = true;
-                CreateHomeWall(WallChangePrefab);
+                RpcHomeWallChangeAni();
             }
             if (homeWallTimer <= 0f) {
                 ClearHomeWall();
-                CreateHomeWall(WallPrefab);
+                CreateHomeWall(false);
             }
         }
     }
+    [ClientRpc]
+    private void RpcHomeWallChangeAni() {
+        for (int x = 5; x <= 7; ++x) {
+            for (int y = 0; y <= 1; ++y) {
+                if (x == 6 && y == 0) { continue; }
+                GameObject obj = Instantiate(WallChangePrefab, new Vector3(x - 6, y - 6, -1f), Quaternion.identity);
+            }
+        }
+    }
+    [ServerCallback]
     private void OnMsgSpawnBonus() {
-        float x = (float) Random.Range(-MAP_RADIUS + 1, MAP_RADIUS - 1);
-        float y = (float) Random.Range(-MAP_RADIUS + 2, MAP_RADIUS - 1);
-        GameObject bonus = Instantiate(BonusPrefab, new Vector3(x, y, 1f), Quaternion.identity);
-        bonus.transform.parent = maps.transform;
+        int x, y;
+        mapInfo.RandomBonusPosition(out x, out y);
+        GameObject bonus = Instantiate(BonusPrefab, new Vector3(x - 6, y - 6, 1f), Quaternion.identity);
+        NetworkServer.Spawn(bonus);
     }
     [ServerCallback]
     private void OnMsgGameStart() {
@@ -245,16 +256,15 @@ public class MapController : NetworkBehaviour {
             default:
                 break;
         }
-        if (obj != null) {
-            NetworkServer.Spawn(obj);
-        }
+        if (obj != null) { NetworkServer.Spawn(obj); }
     }
     private void OnBlockDestroy(int x, int y) {
         mapInfo.Clear(x, y);
     }
+    [ServerCallback]
     private void OnMsgBonusShovel() {
         ClearHomeWall();
-        CreateHomeWall(GetPrefab(BlockType.STEEL));
+        CreateHomeWall(true);
         homeWallTimer = 40f;
         homeWallAnim = false;
     }
@@ -263,7 +273,7 @@ public class MapController : NetworkBehaviour {
         Collider2D[] colliders = Physics2D.OverlapBoxAll(new Vector2(0f, -5.5f), new Vector2(2.8f, 1.8f), 0f);
         foreach (Collider2D collider in colliders) {
             if (collider.transform.parent != null && collider.transform.parent.tag == "Map") {
-                Destroy(collider.transform.parent.gameObject);
+                NetworkServer.Destroy(collider.transform.parent.gameObject);
             }
         }
     }
@@ -289,12 +299,15 @@ public class MapController : NetworkBehaviour {
         homeWallTimer = 0f;
         homeWallAnim = true;
     }
-    // todo 处理该函数 mapinfo同步
-    private void CreateHomeWall(GameObject pref) {
-        for (int i = -1; i <= 1; ++i) {
-            for (int j = -6; j <= -5; ++j) {
-                if (i == 0 && j == -6) { continue; }
-                Instantiate(pref, new Vector3((float)i, (float)j, 0f), Quaternion.identity).transform.parent = maps.transform;
+    private void CreateHomeWall(bool isSteel) {
+        GameObject pref = isSteel ? SteelPrefab : WallPrefab;
+        bool[] smallBlocks = new bool[] { true, true, true, true };
+        for (int x = 5; x <= 7; ++x) {
+            for (int y = 0; y <= 1; ++y) {
+                if (x == 6 && y == 0) { continue; }
+                GameObject obj = Instantiate(pref, new Vector3(x - 6, y - 6, 0), Quaternion.identity);
+                obj.GetComponent<Block>().Set(x, y, smallBlocks, OnBlockDestroy);
+                NetworkServer.Spawn(obj);
             }
         }
     }

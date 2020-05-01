@@ -105,6 +105,9 @@ public class Messager
             if (d.GetType() != typeof(Callback<T>)) {
                 throw new MessagerException($"Attempting to send message for ID {messageID} type{typeof(Callback<T>)} but listeners type is {d.GetType()}.");
             }
+            # if MSG_SEND_LOG
+            Debug.Log($"Message send ID = {messageID}, type = {d.GetType()}");
+            # endif
             ((Callback<T>) d)(arg);
         }
     }
@@ -114,6 +117,9 @@ public class Messager
             if (d.GetType() != typeof(Callback<T, K>)) {
                 throw new MessagerException($"Attempting to send message for ID {messageID} type{typeof(Callback<T, K>)} but listeners type is {d.GetType()}.");
             }
+            # if MSG_SEND_LOG
+            Debug.Log($"Message send ID = {messageID}, type = {d.GetType()}");
+            # endif
             ((Callback<T, K>) d)(arg1, arg2);
         }
     }
@@ -123,6 +129,9 @@ public class Messager
             if (d.GetType() != typeof(Callback<T, K, E>)) {
                 throw new MessagerException($"Attempting to send message for ID {messageID} type{typeof(Callback<T, K, E>)} but listeners type is {d.GetType()}.");
             }
+            # if MSG_SEND_LOG
+            Debug.Log($"Message send ID = {messageID}, type = {d.GetType()}");
+            # endif
             ((Callback<T, K, E>) d)(arg1, arg2, arg3);
         }
     }

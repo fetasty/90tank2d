@@ -107,6 +107,7 @@ public class Player : NetworkBehaviour {
         }
     }
     void Start() {
+        Debug.Log($"player start id {id}");
         GameObject tanks = GameObject.Find("/Tanks");
         if (tanks != null) {
             transform.parent = tanks.transform;
@@ -116,12 +117,12 @@ public class Player : NetworkBehaviour {
         animator.SetInteger("type", id);
         Level = Level;  // 初始化样式, 玩家信息
         InfoPositionUpdate();   // 玩家信息位置调整
-        if (isServer) Messager.Instance.Send<int>(MessageID.PLAYER_BORN, id);
         if (isLocalPlayer) {
-            SetShield(bornShieldTime);
             BulletCount = BulletCapacity;
         }
         if (isServer) {
+            Messager.Instance.Send<int>(MessageID.PLAYER_BORN, id);
+            ServerSetShield(bornShieldTime);
             Messager.Instance.Listen<int>(MessageID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
             Messager.Instance.Listen<int>(MessageID.BONUS_SHIELD_TRIGGER, OnMsgShield);
         }
@@ -130,8 +131,17 @@ public class Player : NetworkBehaviour {
             Messager.Instance.Listen<bool>(MessageID.MOBILE_FIRE_INPUT, OnMsgMobileFire);
         }
     }
-    private void OnDestroy() {
+    private void BeforeDestroy() {
         if (isServer) {
+            // 游戏中会动态销毁的实例, 必须在销毁时注销监听
+            Messager.Instance.CancelListen<int>(MessageID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
+            Messager.Instance.CancelListen<int>(MessageID.BONUS_SHIELD_TRIGGER, OnMsgShield);
+        }
+    }
+    private void OnDestroy() {
+        Debug.Log($"Player OnDestroy id = {id}"); // todo debug
+        // Important: isServer在OnDestroy中不能使用
+        if (NetworkServer.active) {
             // 游戏中会动态销毁的实例, 必须在销毁时注销监听
             Messager.Instance.CancelListen<int>(MessageID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
             Messager.Instance.CancelListen<int>(MessageID.BONUS_SHIELD_TRIGGER, OnMsgShield);
@@ -143,8 +153,10 @@ public class Player : NetworkBehaviour {
     }
     private void Update() {
         if (GameData.isGamePausing) { return; }
-        if (isLocalPlayer) {
+        if (isServer) {
             ShieldUpdate();
+        }
+        if (isLocalPlayer) {
             FireUpdate();
         }
     }
@@ -259,6 +271,7 @@ public class Player : NetworkBehaviour {
     /// <returns>受伤是否死亡, true, 死亡; false, 未死亡</returns>
     [ServerCallback]
     public bool TakeDamage() {
+        Debug.Log($"Player damage id {id}");
         if (ShieldTimer > 0f) { return false; }
         if (Level >= 2) {
             RpcLevelDown(2);
@@ -279,28 +292,27 @@ public class Player : NetworkBehaviour {
         if (Level >= MAX_LEVEL) { return; }
         ++Level;
     }
-    public void SetShield(float time) {
+    [ServerCallback]
+    public void ServerSetShield(float time) {
         if (time < 0.0f) { return; }
         ShieldTimer = time;
-        CmdSetShield(true);
+        RpcSetShield(true);
     }
-    private void CloseShield() {
+    [ServerCallback]
+    private void ServerCloseShield() {
         ShieldTimer = 0.0f;
-        CmdSetShield(false);
-    }
-    [Command]
-    private void CmdSetShield(bool active) {
-        RpcSetShield(active);
+        RpcSetShield(false);
     }
     [ClientRpc]
     private void RpcSetShield(bool active) {
         shield.SetActive(active);
     }
+    [ServerCallback]
     private void ShieldUpdate() {
         if (ShieldTimer > 0f) {
             ShieldTimer -= Time.deltaTime;
             if (ShieldTimer <= 0.0f) {
-                CloseShield();
+                ServerCloseShield();
             }
         }
     }
@@ -316,7 +328,6 @@ public class Player : NetworkBehaviour {
         }
         return Input.GetAxisRaw("Fire1") > 0f;
     }
-    // todo -------------
     [ServerCallback]
     public void OnMsgLevelUp(int playerID) {
         if (id == playerID) {
@@ -326,7 +337,7 @@ public class Player : NetworkBehaviour {
     [ServerCallback]
     public void OnMsgShield(int playerID) {
         if (id == playerID) {
-            SetShield(bonusShieldTime);
+            ServerSetShield(bonusShieldTime);
         }
     }
     public void OnMsgMobileMove(Vector2 input) {

@@ -53,7 +53,7 @@ public class MyNetworkRoomManager : NetworkManager
     public override void OnClientConnect(NetworkConnection conn) {
         base.OnClientConnect(conn);
         if (!IsSceneActive(gameScene)) {
-            ClientScene.AddPlayer();
+            ClientScene.AddPlayer(conn);
         }
     }
     public override void OnClientDisconnect(NetworkConnection conn) {

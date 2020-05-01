@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5934132374689291777}
   m_Layer: 0
   m_Name: Steel
-  m_TagString: Untagged
+  m_TagString: Map
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -44,6 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d25a74c7029af89419b00eeb641becd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
   smallBlockPrefab: {fileID: 3671254030585304995, guid: 437cfa7d1f3e6d247a7715cbed1c3fc3,
     type: 3}
 --- !u!114 &5934132374689291777

@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Mirror;
 
-public class Home : MonoBehaviour
+public class Home : NetworkBehaviour
 {
     public Sprite broken;
     public GameObject explosionPrefab;
@@ -14,12 +15,17 @@ public class Home : MonoBehaviour
         spriteRender = GetComponent<SpriteRenderer>();
         boxCollider = GetComponent<BoxCollider2D>();
     }
+    [ServerCallback]
     public bool TakeDamage() {
         if (!GameData.isGamePlaying) { return false; }
         Messager.Instance.Send(MessageID.HOME_DESTROY);
+        RpcHomeDestroy();
+        return true;
+    }
+    [ClientRpc]
+    private void RpcHomeDestroy() {
         spriteRender.sprite = broken;
         Destroy(boxCollider);
         Instantiate(explosionPrefab, transform.position, Quaternion.identity);
-        return true;
     }
 }

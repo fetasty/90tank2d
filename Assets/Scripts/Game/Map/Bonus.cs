@@ -1,71 +1,85 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
 public enum BonusType {
     BOOM = 0, SHIELD, TANK, LEVEL, STOP_WATCH, SHOVEL
 }
-public class Bonus : MonoBehaviour
+public class Bonus : NetworkBehaviour
 {
     public const int BONUS_TYPE_COUNT = 6;
     public AudioClip bonusAudio;
     public Sprite[] sprites;
     public float lifeTime = 30f;
     public float warnLifeTime = 5f;
-    public BonusType Type { get; set; }
+    [SyncVar(hook = nameof(TypeChange))]
+    public BonusType type;
+    private void TypeChange(BonusType _, BonusType newType) {
+        spriteRender.sprite = sprites[(int) type];
+    }
     private Animation anim;
     private float lifeTimer;
+    private SpriteRenderer spriteRender;
     private void Start() {
-        Type = (BonusType) Random.Range(0, BONUS_TYPE_COUNT);
-        GetComponent<SpriteRenderer>().sprite = sprites[(int) Type];
+        spriteRender = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animation>();
         lifeTimer = lifeTime;
+        spriteRender.sprite = sprites[(int) type];
+        if (isServer) {
+            type = (BonusType) Random.Range(0, BONUS_TYPE_COUNT);
+        }
     }
+    [ServerCallback]
     private void Update() {
-        // if (GameController.Instance.InfoManager.IsGamePause) { return; }
+        if (GameData.isGamePausing) { return; }
         LifeUpdate();
     }
     private void OnTriggerEnter2D(Collider2D other) {
         if (other.tag == "Player") {
-            Player p = other.GetComponent<Player>();
-            // Msg msg = new Msg(MsgID.BONUS_BOOM_TRIGGER, p.ID);
-            // switch (Type) {
-            //     case BonusType.BOOM:
-            //         msg.ID = MsgID.BONUS_BOOM_TRIGGER;
-            //         break;
-            //     case BonusType.LEVEL:
-            //         msg.ID = MsgID.BONUS_LEVEL_TRIGGER;
-            //         break;
-            //     case BonusType.SHIELD:
-            //         msg.ID = MsgID.BONUS_SHIELD_TRIGGER;
-            //         break;
-            //     case BonusType.SHOVEL:
-            //         msg.ID = MsgID.BONUS_SHOVEL_TRIGGER;
-            //         break;
-            //     case BonusType.STOP_WATCH:
-            //         msg.ID = MsgID.BONUS_STOP_WATCH_TRIGGER;
-            //         break;
-            //     case BonusType.TANK:
-            //         msg.ID = MsgID.BONUS_TANK_TRIGGER;
-            //         break;
-            //     default:
-            //         Destroy(gameObject);
-            //         return;
-            // }
-            // GameController.Instance.PostMsg(msg);
-            AudioSource.PlayClipAtPoint(bonusAudio, transform.position);
-            Destroy(gameObject);
+            if (isClient) { AudioSource.PlayClipAtPoint(bonusAudio, transform.position); }
+            if (isServer) {
+                Player p = other.GetComponent<Player>();
+                switch (type) {
+                    case BonusType.BOOM:
+                        Messager.Instance.Send(MessageID.BONUS_BOOM_TRIGGER);
+                        break;
+                    case BonusType.LEVEL:
+                        Messager.Instance.Send<int>(MessageID.BONUS_LEVEL_TRIGGER, p.id);
+                        break;
+                    case BonusType.SHIELD:
+                        Messager.Instance.Send<int>(MessageID.BONUS_SHIELD_TRIGGER, p.id);
+                        break;
+                    case BonusType.SHOVEL:
+                        Messager.Instance.Send(MessageID.BONUS_SHOVEL_TRIGGER);
+                        break;
+                    case BonusType.STOP_WATCH:
+                        Messager.Instance.Send(MessageID.BONUS_STOP_WATCH_TRIGGER);
+                        break;
+                    case BonusType.TANK:
+                        Messager.Instance.Send(MessageID.BONUS_TANK_TRIGGER);
+                        break;
+                    default:
+                        return;
+                }
+                NetworkServer.Destroy(gameObject);
+            }
         }
     }
+    [ServerCallback]
     private void LifeUpdate() {
         if (lifeTimer > 0f) {
             lifeTimer -= Time.deltaTime;
             if (lifeTimer <= warnLifeTime && !anim.isPlaying) {
-                anim.Play();
+                RpcAni();
             }
             if (lifeTimer <= 0f) {
-                Destroy(gameObject);
+                NetworkServer.Destroy(gameObject);
             }
         }
+    }
+    [ClientRpc]
+    private void RpcAni() {
+        anim.Play();
     }
 }

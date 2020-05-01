@@ -173,6 +173,10 @@ public class TankController : NetworkBehaviour {
         }
     }
     public void OnMsgBonusBoomTrigger() {
+        RpcEnemyDie();
+    }
+    [ClientRpc]
+    private void RpcEnemyDie() {
         Enemy[] enemies = FindObjectsOfType<Enemy>();
         foreach (Enemy enemy in enemies) {
             enemy.Die();

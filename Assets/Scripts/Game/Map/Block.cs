@@ -14,20 +14,22 @@ public class Block : NetworkBehaviour
     /// <value>对应编号位置是否存在小方块</value>
     private bool[] parts = new bool[4] {true, true, true, true};
     private Action<int, int> destroyCallback;
-    private int x;
-    private int y;
-    [ServerCallback]
+    public int x;
+    public int y;
     private void Start() {
-        for (int i = 0; i < 4; ++i) {
-            if (parts[i]) {
-                float x = (i % 2 == 0) ? -0.25f : 0.25f;
-                float y = (i > 1) ? -0.25f : 0.25f;
-                GameObject part = Instantiate(smallBlockPrefab,
-                transform.position + new Vector3(x, y, 0f), Quaternion.identity);
-                SmallBlock small = part.GetComponent<SmallBlock>();
-                small.Set(i, OnPartDestroy);
-                NetworkServer.Spawn(part);
-                small.RpcSetParent(transform);
+        transform.parent = GameObject.Find("/Maps").transform;
+        if (isServer) {
+            for (int i = 0; i < 4; ++i) {
+                if (parts[i]) {
+                    float x = (i % 2 == 0) ? -0.25f : 0.25f;
+                    float y = (i > 1) ? -0.25f : 0.25f;
+                    GameObject part = Instantiate(smallBlockPrefab,
+                    transform.position + new Vector3(x, y, 0f), Quaternion.identity);
+                    SmallBlock small = part.GetComponent<SmallBlock>();
+                    small.Set(i, OnPartDestroy);
+                    NetworkServer.Spawn(part);
+                    small.RpcSetParent(transform);
+                }
             }
         }
     }
