@@ -13,11 +13,9 @@ public class MyNetworkDiscovery : NetworkDiscoveryBase<ServerRequest, MyServerRe
     public int myServerBroadcastListenPort = 47777;
     public float myActiveDiscoveryInterval = 1f; // 每1秒询问一次
     public MyServerFoundEvent OnServerFound = new MyServerFoundEvent();    // 发现服务器之后的回调函数
-    public long ServerId { get; private set; }
     public Transport transport;
     public override void Start()
     {
-        ServerId = RandomLong();
         if (transport == null)
             transport = Transport.activeTransport;
         base.Start();
@@ -158,10 +156,10 @@ public class MyNetworkDiscovery : NetworkDiscoveryBase<ServerRequest, MyServerRe
         {
             return new MyServerResponse
             {
-                serverId = ServerId,
+                deviceUniqueIdentifier = SystemInfo.deviceUniqueIdentifier,
                 name = GameData.playerName,
                 uri = transport.ServerUri(),
-                lifeTimer = myActiveDiscoveryInterval * 2f,
+                lifeTimer = myActiveDiscoveryInterval * 4f,
                 playerCount = NetworkManager.singleton.numPlayers,
                 maxPlayerCount = NetworkManager.singleton.maxConnections
             };

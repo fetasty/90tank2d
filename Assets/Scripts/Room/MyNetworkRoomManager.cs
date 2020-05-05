@@ -15,6 +15,16 @@ public class MyNetworkRoomManager : NetworkManager
     public Action<NetworkConnection> onCreateRoomPlayer;
     public Action<NetworkConnection> onClientDisconnect;
     public Action<bool> onGameStartStateChange;
+    public override void OnServerConnect(NetworkConnection conn) {
+        base.OnServerConnect(conn);
+        if (GameData.mode == TankMode.SINGLE) {
+            GameData.networkPlayers.Add(conn);
+        } else if (GameData.mode == TankMode.DOUBLE) {
+            // 两个本地用户
+            GameData.networkPlayers.Add(conn);
+            GameData.networkPlayers.Add(conn);
+        }
+    }
     public override void OnServerAddPlayer(NetworkConnection conn) {
         if (IsSceneActive(gameScene)) {
             // todo nothing
@@ -51,9 +61,14 @@ public class MyNetworkRoomManager : NetworkManager
         ClientScene.RegisterPrefab(roomPlayerPrefab.gameObject);
     }
     public override void OnClientConnect(NetworkConnection conn) {
+        // 游戏中不允许加入
+        if (IsSceneActive(gameScene)) {
+            conn.Disconnect();
+            return;
+        }
         base.OnClientConnect(conn);
-        if (!IsSceneActive(gameScene)) {
-            ClientScene.AddPlayer(conn);
+        if (GameData.IsLan) {
+            ClientScene.AddPlayer(conn); // 自动创建roomPlayer
         }
     }
     public override void OnClientDisconnect(NetworkConnection conn) {

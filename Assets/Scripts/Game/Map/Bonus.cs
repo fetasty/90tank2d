@@ -9,14 +9,15 @@ public enum BonusType {
 public class Bonus : NetworkBehaviour
 {
     public const int BONUS_TYPE_COUNT = 6;
-    public AudioClip bonusAudio;
     public Sprite[] sprites;
     public float lifeTime = 30f;
     public float warnLifeTime = 5f;
     [SyncVar(hook = nameof(TypeChange))]
-    public BonusType type;
-    private void TypeChange(BonusType _, BonusType newType) {
-        spriteRender.sprite = sprites[(int) type];
+    public int type;
+    private void TypeChange(int _, int newType) {
+        if (spriteRender != null) {
+            spriteRender.sprite = sprites[newType];
+        }
     }
     private Animation anim;
     private float lifeTimer;
@@ -24,23 +25,22 @@ public class Bonus : NetworkBehaviour
     private void Start() {
         spriteRender = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animation>();
-        lifeTimer = lifeTime;
-        spriteRender.sprite = sprites[(int) type];
+        spriteRender.sprite = sprites[type];
         if (isServer) {
-            type = (BonusType) Random.Range(0, BONUS_TYPE_COUNT);
+            lifeTimer = lifeTime;
         }
     }
     [ServerCallback]
     private void Update() {
-        if (GameData.isGamePausing) { return; }
+        if (GameData.isGamePausing && isServer) { return; }
         LifeUpdate();
     }
     private void OnTriggerEnter2D(Collider2D other) {
         if (other.tag == "Player") {
-            if (isClient) { AudioSource.PlayClipAtPoint(bonusAudio, transform.position); }
+            if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.BONUS); }
             if (isServer) {
                 Player p = other.GetComponent<Player>();
-                switch (type) {
+                switch ((BonusType)type) {
                     case BonusType.BOOM:
                         Messager.Instance.Send(MessageID.BONUS_BOOM_TRIGGER);
                         break;

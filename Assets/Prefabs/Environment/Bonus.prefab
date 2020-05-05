@@ -139,6 +139,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c425a5bdea3cee4182f8e721d2ea932, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0
   bonusAudio: {fileID: 8300000, guid: 78ea59a2d35da144c983105394d01c64, type: 3}
   sprites:
   - {fileID: 21300006, guid: d532de5e6df7ce948a5f9d07897aa865, type: 3}
@@ -149,6 +151,7 @@ MonoBehaviour:
   - {fileID: 21300004, guid: d532de5e6df7ce948a5f9d07897aa865, type: 3}
   lifeTime: 30
   warnLifeTime: 5
+  type: 0
 --- !u!114 &1903654847516550811
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -164,3 +167,4 @@ MonoBehaviour:
   sceneId: 0
   serverOnly: 0
   m_AssetId: 
+  hasSpawned: 0

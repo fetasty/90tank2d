@@ -7,16 +7,11 @@ public class Enemy : NetworkBehaviour {
 
     public GameObject bulletPrefab;
     public GameObject explosionPrefab;
-
     public float moveSpeed = 2.0f;
-    public float minFireTime = 0.5f;
-    public float maxFireTime = 4.0f;
-    public float minMoveTime = 0.5f;
-    public float maxMoveTime = 3.0f;
 
     private Animator animator;
     [SyncVar(hook = nameof(TypeChange))]
-    private int type;
+    public int type;
     private void TypeChange(int _, int newType) {
         if (animator != null) { animator.SetInteger("type", newType); }
     }
@@ -40,25 +35,25 @@ public class Enemy : NetworkBehaviour {
         if (tanks != null) {
             transform.parent = tanks.transform;
         }
-        // info = GameController.Instance.InfoManager;
-        // GameController.Instance.PostMsg(new Msg(MsgID.ENEMY_BORN, Type));
+        Messager.Instance.Send(MessageID.ENEMY_BORN);
         animator = GetComponent<Animator>();
         animator.SetInteger("type", type);
         animator.SetBool("bonus", bonus);
         if (isServer) {
-            if (type == 1) { moveSpeed *= 2f; }
-            fireTimer = Random.Range(minFireTime, maxFireTime);
-            moveTimer = Random.Range(minMoveTime, maxMoveTime / 2f);
+            moveSpeed = GameData.EnemySpeed;
+            if (!GameData.enemyCrizy && type == 1) { moveSpeed *= 2f; }
+            fireTimer = GameData.EnemyFireTime;
+            moveTimer = GameData.EnemyMoveTime;
         }
     }
     [ServerCallback]
     private void Update() {
-        if (GameData.isGamePausing /*|| GameData.IsBonusStop*/) { return; }
+        if ((GameData.isGamePausing && isServer) || GameData.isStopWatchRunning) { return; }
         Fire();
     }
     [ServerCallback]
     private void FixedUpdate() {
-        if (GameData.isGamePausing /*|| GameData.IsBonusStop*/) { return; }
+        if ((GameData.isGamePausing && isServer) || GameData.isStopWatchRunning) { return; }
         Move();
     }
     [ServerCallback]
@@ -91,7 +86,7 @@ public class Enemy : NetworkBehaviour {
             Bullet bullet = obj.GetComponent<Bullet>();
             bullet.Set(false, type > 2 ? 1 : 0);
             NetworkServer.Spawn(obj);   // 服务器生成子弹
-            fireTimer = Random.Range(minFireTime, maxFireTime);
+            fireTimer = GameData.EnemyFireTime;
         }
     }
     [ServerCallback]
@@ -125,7 +120,7 @@ public class Enemy : NetworkBehaviour {
             if (isMove) {
                 transform.rotation = Quaternion.Euler(0f, 0f, angle);
             }
-            moveTimer = Random.Range(minMoveTime, maxMoveTime);
+            moveTimer = GameData.EnemyMoveTime;
         }
         if (isMove) {
             transform.Translate(transform.up * moveSpeed * Time.fixedDeltaTime, Space.World);

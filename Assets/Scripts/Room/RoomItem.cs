@@ -11,11 +11,11 @@ public class RoomItem : MonoBehaviour
     public Text member;
     public Button join;
     
-    public void SetInfo(MyServerResponse info, Action<long> joinRoom) {
+    public void SetInfo(MyServerResponse info, Action<string> joinRoom) {
         roomName.text = info.name;
         roomIP.text = info.EndPoint.Address.ToString();
         member.text = $"{info.playerCount}/{info.maxPlayerCount}";
         join.onClick.RemoveAllListeners();
-        join.onClick.AddListener(() => joinRoom(info.serverId));
+        join.onClick.AddListener(() => joinRoom(info.deviceUniqueIdentifier));
     }
 }

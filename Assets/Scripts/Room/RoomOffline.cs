@@ -19,6 +19,14 @@ public class RoomOffline : MonoBehaviour
         searchBtn.onClick.AddListener(() => EnterRoomOnline(false));
         backBtn.onClick.AddListener(() => Global.EnterWelcome());
     }
+    private void Update() {
+        BackOperationUpdate();
+    }
+    private void BackOperationUpdate() {
+        if (Input.GetKeyDown(KeyCode.Escape)) {
+            Global.EnterWelcome();
+        }
+    }
     private void OnNameInputChanged(string input) {
         if (input.Length <= 10) {
             lastInput = input;

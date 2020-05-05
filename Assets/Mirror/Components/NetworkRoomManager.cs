@@ -163,6 +163,7 @@ namespace Mirror
                 gamePlayer = startPos != null
                     ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
                     : Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
+                gamePlayer.name = playerPrefab.name;
             }
 
             if (!OnRoomServerSceneLoadedForPlayer(conn, roomPlayer, gamePlayer))
@@ -247,17 +248,10 @@ namespace Mirror
         {
             if (conn.identity != null)
             {
-                NetworkRoomPlayer roomPlayer = conn.identity.GetComponent<NetworkRoomPlayer>();
+                NetworkRoomPlayer player = conn.identity.GetComponent<NetworkRoomPlayer>();
 
-                if (roomPlayer != null)
-                    roomSlots.Remove(roomPlayer);
-
-                foreach (NetworkIdentity clientOwnedObject in conn.clientOwnedObjects)
-                {
-                    roomPlayer = clientOwnedObject.GetComponent<NetworkRoomPlayer>();
-                    if (roomPlayer != null)
-                        roomSlots.Remove(roomPlayer);
-                }
+                if (player != null)
+                    roomSlots.Remove(player);
             }
 
             allPlayersReady = false;
@@ -271,8 +265,8 @@ namespace Mirror
             if (IsSceneActive(RoomScene))
                 RecalculateRoomPlayerIndices();
 
-            OnRoomServerDisconnect(conn);
             base.OnServerDisconnect(conn);
+            OnRoomServerDisconnect(conn);
         }
 
         /// <summary>

@@ -32,17 +32,30 @@ public class TankController : NetworkBehaviour {
         Messager.Instance.Listen(MessageID.BONUS_BOOM_TRIGGER, OnMsgBonusBoomTrigger);
         Messager.Instance.Listen(MessageID.BONUS_TANK_TRIGGER, OnMsgBonusTankTrigger);
         Messager.Instance.Listen(MessageID.GAME_RETRY, OnMsgGameRetry);
+        Messager.Instance.Listen(MessageID.DATA_START_LEVEL, OnMsgStartLevel);
+        Messager.Instance.Listen(MessageID.DATA_LEVEL_WIN, OnMsgLevelWin);
+    }
+    private void OnDestroy() {
+        if (GameData.isHost) {
+            // 事件监听
+            Messager.Instance.CancelListen(MessageID.DATA_GAME_START, OnMsgGameStart);
+            Messager.Instance.CancelListen<int>(MessageID.DATA_PLAYER_DIE, OnMsgPlayerDie);
+            Messager.Instance.CancelListen(MessageID.BONUS_BOOM_TRIGGER, OnMsgBonusBoomTrigger);
+            Messager.Instance.CancelListen(MessageID.BONUS_TANK_TRIGGER, OnMsgBonusTankTrigger);
+            Messager.Instance.CancelListen(MessageID.GAME_RETRY, OnMsgGameRetry);
+            Messager.Instance.CancelListen(MessageID.DATA_START_LEVEL, OnMsgStartLevel);
+            Messager.Instance.CancelListen(MessageID.DATA_LEVEL_WIN, OnMsgLevelWin);
+        }
     }
     [ServerCallback]
     private void Update() {
-        if (GameData.isGamePausing) { return; }
+        if (GameData.isGamePausing && isServer) { return; }
         EnemySpawnUpdate();
     }
     /// <summary>
     /// 每帧调用, 自动刷新生成敌人
     /// </summary>
     private void EnemySpawnUpdate() {
-        if (!GameData.isGamePlaying) { return; }
         for (int i = 0; i < enemySpawnPointTimers.Length; ++i) {
             if (enemySpawnPointTimers[i] > 0f) { enemySpawnPointTimers[i] -= Time.deltaTime; }
         }
@@ -51,6 +64,7 @@ public class TankController : NetworkBehaviour {
             return;
         }
         enemySpawnTimer = GameData.EnemySpawnTime;
+        if (!GameData.isInGameLevel) { return; }
         if (!GameData.CanSpawnEnemy) { return; }
         SpawnEnemy();
     }
@@ -97,12 +111,12 @@ public class TankController : NetworkBehaviour {
     /// </summary>
     /// <param name="playerID">玩家的唯一标识</param>
     /// <returns>是否生成成功</returns>
-    public bool SpawnPlayer(int playerID) {
+    public bool SpawnPlayer(int playerID, int level = 0, bool isFree = false) {
         if (playerID < Player.MIN_ID || playerID > Player.MAX_ID) { return false; } // 未设计这种玩家
         if (playerExists[playerID]) { return false; }
         GameObject obj = Instantiate(SpawnerPrefab, PlayerSpawnPoints[playerID], Quaternion.identity);
         Spawner spawner = obj.GetComponent<Spawner>();
-        spawner.SetPlayer(playerID);
+        spawner.SetPlayer(playerID, level, isFree);
         NetworkServer.Spawn(obj);
         playerExists[playerID] = true;
         return true;
@@ -138,19 +152,10 @@ public class TankController : NetworkBehaviour {
     }
     private void PlayerInitialSpawn() {
         TankMode mode = GameData.mode;
-        if (mode == TankMode.SINGLE) {
-            // todo
-            SpawnPlayer(0);
-        } else if (mode == TankMode.DOUBLE) {
-            // todo
-            SpawnPlayer(0);
-            SpawnPlayer(1);
-        } else {
-            // todo 局域网游戏
-            Debug.Log("Start Lan Game!!!");
-            for (int i = 0; i < GameData.networkPlayers.Count; ++i) {
-                SpawnPlayer(i);
-            }
+        // 初始化生成, 不扣生命
+        Debug.Log("Start Lan Game!!!");
+        for (int i = 0; i < GameData.networkPlayers.Count; ++i) {
+            SpawnPlayer(i, GameData.playerLevels[i], true);
         }
     }
     /// <summary>
@@ -158,13 +163,16 @@ public class TankController : NetworkBehaviour {
     /// </summary>
     public void OnMsgGameStart() {
         Clear();
+    }
+    private void OnMsgStartLevel() {
         EnemyInitialSpawn();
         PlayerInitialSpawn();
     }
+    private void OnMsgLevelWin() {
+        Invoke(nameof(Clear), 3f);
+    }
     private void OnMsgGameRetry() {
         Clear();
-        EnemyInitialSpawn();
-        PlayerInitialSpawn();
     }
     public void OnMsgPlayerDie(int id) {
         playerExists[id] = false;
@@ -194,13 +202,6 @@ public class TankController : NetworkBehaviour {
     /// <returns>小于0说明没有玩家需要重生, 否则返回需要重生的玩家ID</returns>
     private int GetNeedSpawnPlayerID() {
         TankMode mode = GameData.mode;
-        // todo 单机模式下的改进
-        if (!playerExists[0] && (mode == TankMode.SINGLE || mode == TankMode.DOUBLE)) {
-            return 0;
-        }
-        if (!playerExists[1] && (mode == TankMode.DOUBLE)) {
-            return 1;
-        }
         for (int i = 0; i < GameData.networkPlayers.Count; ++i) {
             if (!playerExists[i]) {
                 return i;

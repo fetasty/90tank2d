@@ -9,42 +9,43 @@ namespace Mirror.Weaver
         /// Generates the serialization and deserialization methods for a specified generic argument
         /// </summary>
         /// <param name="td">The type of the class that needs serialization methods</param>
-        /// <param name="itemType">generic argument to serialize</param>
-        /// <param name="mirrorBaseType">the base SyncObject td inherits from</param>
+        /// <param name="genericArgument">Which generic argument to serialize,  0 is the first one</param>
         /// <param name="serializeMethod">The name of the serialize method</param>
         /// <param name="deserializeMethod">The name of the deserialize method</param>
-        public static void GenerateSerialization(TypeDefinition td, TypeReference itemType, TypeReference mirrorBaseType, string serializeMethod, string deserializeMethod)
+        public static void GenerateSerialization(TypeDefinition td, int genericArgument, string serializeMethod, string deserializeMethod)
         {
+            // find item type
+            GenericInstanceType gt = (GenericInstanceType)td.BaseType;
+            if (gt.GenericArguments.Count <= genericArgument)
+            {
+                Weaver.Error($"{td} should have {genericArgument} generic arguments");
+                return;
+            }
+            TypeReference itemType = Weaver.CurrentAssembly.MainModule.ImportReference(gt.GenericArguments[genericArgument]);
+
             Weaver.DLog(td, "SyncObjectProcessor Start item:" + itemType.FullName);
 
-            bool success = GenerateSerialization(serializeMethod, td, itemType, mirrorBaseType);
+            MethodReference writeItemFunc = GenerateSerialization(serializeMethod, td, itemType);
             if (Weaver.WeavingFailed)
             {
                 return;
             }
 
-            success |= GenerateDeserialization(deserializeMethod, td, itemType, mirrorBaseType);
+            MethodReference readItemFunc = GenerateDeserialization(deserializeMethod, td, itemType);
 
-            if (success)
-                Weaver.DLog(td, "SyncObjectProcessor Done");
+            if (readItemFunc == null || writeItemFunc == null)
+                return;
+
+            Weaver.DLog(td, "SyncObjectProcessor Done");
         }
 
         // serialization of individual element
-        static bool GenerateSerialization(string methodName, TypeDefinition td, TypeReference itemType, TypeReference mirrorBaseType)
+        static MethodReference GenerateSerialization(string methodName, TypeDefinition td, TypeReference itemType)
         {
             Weaver.DLog(td, "  GenerateSerialization");
-            bool existing = td.HasMethodInBaseType(methodName, mirrorBaseType);
-            if (existing)
-                return true;
-
-
-            // this check needs to happen inside GenerateSerialization because
-            // we need to check if user has made custom function above
-            if (itemType.IsGenericInstance)
-            {
-                Weaver.Error($"Can not create Serialize or Deserialize for generic element in {td.Name}. Override virtual methods with custom Serialize and Deserialize to use {itemType} in SyncList", td);
-                return false;
-            }
+            MethodDefinition existing = td.GetMethod(methodName);
+            if (existing != null)
+                return existing;
 
             MethodDefinition serializeFunc = new MethodDefinition(methodName, MethodAttributes.Public |
                     MethodAttributes.Virtual |
@@ -56,6 +57,12 @@ namespace Mirror.Weaver
             serializeFunc.Parameters.Add(new ParameterDefinition("item", ParameterAttributes.None, itemType));
             ILProcessor serWorker = serializeFunc.Body.GetILProcessor();
 
+            if (itemType.IsGenericInstance)
+            {
+                Weaver.Error($"{td} cannot have generic elements {itemType}");
+                return null;
+            }
+
             MethodReference writeFunc = Writers.GetWriteFunc(itemType);
             if (writeFunc != null)
             {
@@ -65,29 +72,21 @@ namespace Mirror.Weaver
             }
             else
             {
-                Weaver.Error($"{td.Name} has sync object generic type {itemType.Name}.  Use a type supported by mirror instead", td);
-                return false;
+                Weaver.Error($"{td} cannot have item of type {itemType}.  Use a type supported by mirror instead");
+                return null;
             }
             serWorker.Append(serWorker.Create(OpCodes.Ret));
 
             td.Methods.Add(serializeFunc);
-            return true;
+            return serializeFunc;
         }
 
-        static bool GenerateDeserialization(string methodName, TypeDefinition td, TypeReference itemType, TypeReference mirrorBaseType)
+        static MethodReference GenerateDeserialization(string methodName, TypeDefinition td, TypeReference itemType)
         {
             Weaver.DLog(td, "  GenerateDeserialization");
-            bool existing = td.HasMethodInBaseType(methodName, mirrorBaseType);
-            if (existing)
-                return true;
-
-            // this check needs to happen inside GenerateDeserialization because
-            // we need to check if user has made custom function above
-            if (itemType.IsGenericInstance)
-            {
-                Weaver.Error($"Can not create Serialize or Deserialize for generic element in {td.Name}. Override virtual methods with custom Serialize and Deserialize to use {itemType.Name} in SyncList", td);
-                return false;
-            }
+            MethodDefinition existing = td.GetMethod(methodName);
+            if (existing != null)
+                return existing;
 
             MethodDefinition deserializeFunction = new MethodDefinition(methodName, MethodAttributes.Public |
                     MethodAttributes.Virtual |
@@ -108,12 +107,12 @@ namespace Mirror.Weaver
             }
             else
             {
-                Weaver.Error($"{td.Name} has sync object generic type {itemType.Name}.  Use a type supported by mirror instead", td);
-                return false;
+                Weaver.Error($"{td} cannot have item of type {itemType}.  Use a type supported by mirror instead");
+                return null;
             }
 
             td.Methods.Add(deserializeFunction);
-            return true;
+            return deserializeFunction;
         }
     }
 }

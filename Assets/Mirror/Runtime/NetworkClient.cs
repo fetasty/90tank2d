@@ -20,8 +20,6 @@ namespace Mirror
     /// </summary>
     public static class NetworkClient
     {
-        static readonly ILogger logger = LogFactory.GetLogger(typeof(NetworkClient));
-
         /// <summary>
         /// The registered network message handlers.
         /// </summary>
@@ -62,7 +60,7 @@ namespace Mirror
         /// <param name="address"></param>
         public static void Connect(string address)
         {
-            if (logger.LogEnabled()) logger.Log("Client Connect: " + address);
+            if (LogFilter.Debug) Debug.Log("Client Connect: " + address);
 
             RegisterSystemHandlers(false);
             Transport.activeTransport.enabled = true;
@@ -82,7 +80,7 @@ namespace Mirror
         /// <param name="uri">Address of the server to connect to</param>
         public static void Connect(Uri uri)
         {
-            if (logger.LogEnabled()) logger.Log("Client Connect: " + uri);
+            if (LogFilter.Debug) Debug.Log("Client Connect: " + uri);
 
             RegisterSystemHandlers(false);
             Transport.activeTransport.enabled = true;
@@ -98,7 +96,7 @@ namespace Mirror
 
         internal static void ConnectHost()
         {
-            logger.Log("Client Connect Host to Server");
+            if (LogFilter.Debug) Debug.Log("Client Connect Host to Server");
 
             RegisterSystemHandlers(true);
 
@@ -153,7 +151,7 @@ namespace Mirror
 
         static void OnError(Exception exception)
         {
-            logger.LogException(exception);
+            Debug.LogException(exception);
         }
 
         static void OnDisconnected()
@@ -171,7 +169,7 @@ namespace Mirror
             {
                 connection.TransportReceive(data, channelId);
             }
-            else logger.LogError("Skipped Data message handling because connection is null.");
+            else Debug.LogError("Skipped Data message handling because connection is null.");
         }
 
         static void OnConnected()
@@ -187,7 +185,7 @@ namespace Mirror
                 NetworkTime.UpdateClient();
                 connection.InvokeHandler(new ConnectMessage(), -1);
             }
-            else logger.LogError("Skipped Connect message handling because connection is null.");
+            else Debug.LogError("Skipped Connect message handling because connection is null.");
         }
 
         /// <summary>
@@ -244,12 +242,12 @@ namespace Mirror
             {
                 if (connectState != ConnectState.Connected)
                 {
-                    logger.LogError("NetworkClient Send when not connected to a server");
+                    Debug.LogError("NetworkClient Send when not connected to a server");
                     return false;
                 }
                 return connection.Send(message, channelId);
             }
-            logger.LogError("NetworkClient Send with no connection");
+            Debug.LogError("NetworkClient Send with no connection");
             return false;
         }
 
@@ -306,15 +304,15 @@ namespace Mirror
         /// Register a handler for a particular message type.
         /// <para>There are several system message types which you can add handlers for. You can also add your own message types.</para>
         /// </summary>
-        /// <typeparam name="T">Message type</typeparam>
-        /// <param name="handler">Function handler which will be invoked when this message type is received.</param>
-        /// <param name="requireAuthentication">True if the message requires an authenticated connection</param>
+        /// <typeparam name="T">The message type to unregister.</typeparam>
+        /// <param name="handler"></param>
+        /// <param name="requireAuthentication">true if the message requires an authenticated connection</param>
         public static void RegisterHandler<T>(Action<NetworkConnection, T> handler, bool requireAuthentication = true) where T : IMessageBase, new()
         {
             int msgType = MessagePacker.GetId<T>();
             if (handlers.ContainsKey(msgType))
             {
-                logger.LogWarning($"NetworkClient.RegisterHandler replacing hanlder for {typeof(T).FullName}, id={msgType}. If replacement is intentional, use ReplaceHandler instead to avoid this warning.");
+                if (LogFilter.Debug) Debug.Log("NetworkClient.RegisterHandler replacing " + handler + " - " + msgType);
             }
             handlers[msgType] = MessagePacker.MessageHandler(handler, requireAuthentication);
         }
@@ -323,48 +321,23 @@ namespace Mirror
         /// Register a handler for a particular message type.
         /// <para>There are several system message types which you can add handlers for. You can also add your own message types.</para>
         /// </summary>
-        /// <typeparam name="T">Message type</typeparam>
-        /// <param name="handler">Function handler which will be invoked when this message type is received.</param>
-        /// <param name="requireAuthentication">True if the message requires an authenticated connection</param>
+        /// <typeparam name="T">The message type to unregister.</typeparam>
+        /// <param name="handler"></param>
+        /// <param name="requireAuthentication">true if the message requires an authenticated connection</param>
         public static void RegisterHandler<T>(Action<T> handler, bool requireAuthentication = true) where T : IMessageBase, new()
         {
             RegisterHandler((NetworkConnection _, T value) => { handler(value); }, requireAuthentication);
         }
 
         /// <summary>
-        /// Replaces a handler for a particular message type.
-        /// <see cref="RegisterHandler{T}(Action{NetworkConnection, T}, bool)"/>
-        /// </summary>
-        /// <typeparam name="T">Message type</typeparam>
-        /// <param name="handler">Function handler which will be invoked when this message type is received.</param>
-        /// <param name="requireAuthentication">True if the message requires an authenticated connection</param>
-        public static void ReplaceHandler<T>(Action<NetworkConnection, T> handler, bool requireAuthentication = true) where T : IMessageBase, new()
-        {
-            int msgType = MessagePacker.GetId<T>();
-            handlers[msgType] = MessagePacker.MessageHandler(handler, requireAuthentication);
-        }
-
-        /// <summary>
-        /// Replaces a handler for a particular message type.
-        /// <see cref="RegisterHandler{T}(Action{NetworkConnection, T}, bool)"/>
-        /// </summary>
-        /// <typeparam name="T">Message type</typeparam>
-        /// <param name="handler">Function handler which will be invoked when this message type is received.</param>
-        /// <param name="requireAuthentication">True if the message requires an authenticated connection</param>
-        public static void ReplaceHandler<T>(Action<T> handler, bool requireAuthentication = true) where T : IMessageBase, new()
-        {
-            ReplaceHandler((NetworkConnection _, T value) => { handler(value); }, requireAuthentication);
-        }
-
-        /// <summary>
         /// Unregisters a network message handler.
         /// </summary>
         /// <typeparam name="T">The message type to unregister.</typeparam>
-        public static bool UnregisterHandler<T>() where T : IMessageBase
+        public static void UnregisterHandler<T>() where T : IMessageBase
         {
             // use int to minimize collisions
             int msgType = MessagePacker.GetId<T>();
-            return handlers.Remove(msgType);
+            handlers.Remove(msgType);
         }
 
         /// <summary>
@@ -373,7 +346,7 @@ namespace Mirror
         /// </summary>
         public static void Shutdown()
         {
-            logger.Log("Shutting down client.");
+            if (LogFilter.Debug) Debug.Log("Shutting down client.");
             ClientScene.Shutdown();
             connectState = ConnectState.None;
             handlers.Clear();

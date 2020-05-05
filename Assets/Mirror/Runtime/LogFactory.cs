@@ -1,25 +1,20 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Mirror
 {
     public static class LogFactory
     {
-        internal static readonly Dictionary<string, ILogger> loggers = new Dictionary<string, ILogger>();
+        private static readonly Dictionary<string, ILogger> loggers = new Dictionary<string, ILogger>();
 
-        public static ILogger GetLogger<T>(LogType defaultLogLevel = LogType.Warning)
+        public static ILogger GetLogger<T>()
         {
-            return GetLogger(typeof(T).Name, defaultLogLevel);
+            return GetLogger(typeof(T).Name);
         }
 
-        public static ILogger GetLogger(System.Type type, LogType defaultLogLevel = LogType.Warning)
+        public static ILogger GetLogger(string loggerName)
         {
-            return GetLogger(type.Name, defaultLogLevel);
-        }
-
-        public static ILogger GetLogger(string loggerName, LogType defaultLogLevel = LogType.Warning)
-        {
-            if (loggers.TryGetValue(loggerName, out ILogger logger))
+            if (loggers.TryGetValue(loggerName, out ILogger logger ))
             {
                 return logger;
             }
@@ -27,27 +22,11 @@ namespace Mirror
             logger = new Logger(Debug.unityLogger)
             {
                 // by default, log warnings and up
-                filterLogType = defaultLogLevel
+                filterLogType = LogType.Warning
             };
 
             loggers[loggerName] = logger;
             return logger;
         }
-    }
-
-
-    public static class ILoggerExtensions
-    {
-        public static void LogError(this ILogger logger, object message)
-        {
-            logger.Log(LogType.Error, message);
-        }
-
-        public static void LogWarning(this ILogger logger, object message)
-        {
-            logger.Log(LogType.Warning, message);
-        }
-
-        public static bool LogEnabled(this ILogger logger) => logger.IsLogTypeAllowed(LogType.Log);
     }
 }

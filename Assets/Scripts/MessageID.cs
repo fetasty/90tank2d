@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -27,10 +27,15 @@ public enum MessageID
     MOBILE_MOVE_INPUT,      // 移动端移动输入
     MOBILE_FIRE_INPUT,      // 移动端开火输入
     HOME_DESTROY,           // 老家被毁
-    DATA_GAME_START,            // 数据变动
+    DATA_GAME_START,        // 数据变动
     DATA_ENEMY_SPAWN,       // 数据变动-敌人生成
     DATA_ENEMY_DIE,         // 数据变动-敌人死亡
     DATA_PLAYER_SPAWN,      // 数据变动-玩家生成
     DATA_PLAYER_DIE,        // 数据变动-玩家死亡
     DATA_BONUS_TANK,        // 数据变动-触发tank奖励
+    START_LEVEL,            // 开始关卡
+    DATA_START_LEVEL,       // 开始关卡-数据初始完成
+    LEVEL_WIN,              // 关卡胜利
+    DATA_LEVEL_WIN,         // 关卡胜利-数据更新完毕
+    ENEMY_CRIZY,            // 敌人疯狂
 }

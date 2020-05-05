@@ -41,14 +41,6 @@ namespace Mirror
             this.objects = objects;
         }
 
-        public void Reset()
-        {
-            IsReadOnly = false;
-            changes.Clear();
-            changesAhead = 0;
-            objects.Clear();
-        }
-
         protected virtual void SerializeItem(NetworkWriter writer, T item) { }
         protected virtual T DeserializeItem(NetworkReader reader) => default;
 

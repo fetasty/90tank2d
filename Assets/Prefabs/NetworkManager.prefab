@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4835963443713383166}
   - component: {fileID: 4835963443713383165}
   m_Layer: 0
-  m_Name: NerworkManager
+  m_Name: NetworkManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -72,7 +72,7 @@ MonoBehaviour:
   - {fileID: 1126545928910412902, guid: 21dfbb7572f722e4ea88e9dc0d8205f8, type: 3}
   - {fileID: 8418193477639784871, guid: 2047d6502ff655e4c9094b702ab7442c, type: 3}
   - {fileID: 3671254030585304995, guid: 437cfa7d1f3e6d247a7715cbed1c3fc3, type: 3}
-  roomPlayerPrefab: {fileID: 2313137644621170345, guid: da36830a3ed7130498c97ce5c1a520e5,
+  roomPlayerPrefab: {fileID: 1917316994331529579, guid: da36830a3ed7130498c97ce5c1a520e5,
     type: 3}
   gameScene: Assets/Scenes/Game.unity
   minPlayer: 1

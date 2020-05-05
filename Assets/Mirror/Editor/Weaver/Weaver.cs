@@ -27,7 +27,7 @@ namespace Mirror.Weaver
         public Dictionary<string, int> numSyncVars = new Dictionary<string, int>();
     }
 
-    internal static class Weaver
+    internal class Weaver
     {
         public static WeaverLists WeaveLists { get; private set; }
         public static AssemblyDefinition CurrentAssembly { get; private set; }
@@ -73,7 +73,6 @@ namespace Mirror.Weaver
         public static MethodReference ReadyConnectionReference;
 
         public static TypeReference ComponentType;
-        public static TypeReference ObjectType;
 
         public static TypeReference CmdDelegateReference;
         public static MethodReference CmdDelegateConstructor;
@@ -148,17 +147,6 @@ namespace Mirror.Weaver
         {
             Log.Error(message);
             WeavingFailed = true;
-        }
-
-        public static void Error(string message, MemberReference mr)
-        {    
-            Log.Error($"{message} (at {mr})");
-            WeavingFailed = true;
-        }
-
-        public static void Warning(string message, MemberReference mr)
-        {
-            Log.Warning($"{message} (at {mr})");
         }
 
         public static int GetSyncVarStart(string className)
@@ -306,7 +294,6 @@ namespace Mirror.Weaver
             RecycleWriterReference = Resolvers.ResolveMethod(NetworkWriterPoolType, CurrentAssembly, "Recycle");
 
             ComponentType = UnityAssembly.MainModule.GetType("UnityEngine.Component");
-            ObjectType = UnityAssembly.MainModule.GetType("UnityEngine.Object");
             ClientSceneType = NetAssembly.MainModule.GetType("Mirror.ClientScene");
             ReadyConnectionReference = Resolvers.ResolveMethod(ClientSceneType, CurrentAssembly, "get_readyConnection");
 
@@ -342,6 +329,15 @@ namespace Mirror.Weaver
             return td.IsDerivedFrom(NetworkBehaviourType);
         }
 
+        public static bool IsValidTypeToGenerate(TypeDefinition variable)
+        {
+            // a valid type is a simple class or struct. so we generate only code for types we dont know, and if they are not inside
+            // this assembly it must mean that we are trying to serialize a variable outside our scope. and this will fail.
+            // no need to report an error here, the caller will report a better error
+            string assembly = CurrentAssembly.MainModule.Name;
+            return variable.Module.Name == assembly;
+        }
+
         static void CheckMonoBehaviour(TypeDefinition td)
         {
             if (td.IsDerivedFrom(MonoBehaviourType))
@@ -350,7 +346,7 @@ namespace Mirror.Weaver
             }
         }
 
-        static bool WeaveNetworkBehavior(TypeDefinition td)
+        static bool CheckNetworkBehaviour(TypeDefinition td)
         {
             if (!td.IsClass)
                 return false;
@@ -385,78 +381,84 @@ namespace Mirror.Weaver
                 }
             }
 
-            bool modified = false;
+            bool didWork = false;
             foreach (TypeDefinition behaviour in behaviourClasses)
             {
-                modified |= ProcessNetworkBehaviourType(behaviour);
+                didWork |= ProcessNetworkBehaviourType(behaviour);
             }
-            return modified;
+            return didWork;
         }
 
-        static bool WeaveMessage(TypeDefinition td)
+        static bool CheckMessageBase(TypeDefinition td)
         {
             if (!td.IsClass)
                 return false;
 
-            bool modified = false;
+            bool didWork = false;
 
             if (td.ImplementsInterface(IMessageBaseType))
             {
                 MessageClassProcessor.Process(td);
-                modified = true;
+                didWork = true;
             }
 
             // check for embedded types
             foreach (TypeDefinition embedded in td.NestedTypes)
             {
-                modified |= WeaveMessage(embedded);
+                didWork |= CheckMessageBase(embedded);
             }
 
-            return modified;
+            return didWork;
         }
 
-        static bool WeaveSyncObject(TypeDefinition td)
+        static bool CheckSyncList(TypeDefinition td)
         {
-            bool modified = false;
-            
-            // ignore generic classes
-            // we can not process generic classes
-            // we give error if a generic syncObject is used in NetworkBehaviour
-            if (td.HasGenericParameters)
+            if (!td.IsClass)
                 return false;
 
-            // ignore abstract classes
-            // we dont need to process abstract classes because classes that
-            // inherit from them will be processed instead
+            bool didWork = false;
 
-            // We cant early return with non classes or Abstract classes
-            // because we still need to check for embeded types
-            if (td.IsClass || !td.IsAbstract)
+            // are ANY parent classes SyncListStruct
+            TypeReference parent = td.BaseType;
+            while (parent != null)
             {
-                if (td.IsDerivedFrom(SyncListType))
+                if (parent.FullName.StartsWith(SyncListType.FullName, StringComparison.Ordinal))
                 {
-                    SyncListProcessor.Process(td, SyncListType);
-                    modified = true;
+                    SyncListProcessor.Process(td);
+                    didWork = true;
+                    break;
                 }
-                else if (td.IsDerivedFrom(SyncSetType))
+                if (parent.FullName.StartsWith(SyncSetType.FullName, StringComparison.Ordinal))
                 {
-                    SyncListProcessor.Process(td, SyncSetType);
-                    modified = true;
+                    SyncListProcessor.Process(td);
+                    didWork = true;
+                    break;
                 }
-                else if (td.IsDerivedFrom(SyncDictionaryType))
+                if (parent.FullName.StartsWith(SyncDictionaryType.FullName, StringComparison.Ordinal))
                 {
                     SyncDictionaryProcessor.Process(td);
-                    modified = true;
+                    didWork = true;
+                    break;
+                }
+                try
+                {
+                    parent = parent.Resolve().BaseType;
+                }
+                catch (AssemblyResolutionException)
+                {
+                    // this can happen for pluins.
+                    //Console.WriteLine("AssemblyResolutionException: "+ ex.ToString());
+                    break;
                 }
             }
 
             // check for embedded types
             foreach (TypeDefinition embedded in td.NestedTypes)
             {
-                modified |= WeaveSyncObject(embedded);
+                didWork |= CheckSyncList(embedded);
             }
 
-            return modified;
+            return didWork;
         }
 
         static bool Weave(string assName, IEnumerable<string> dependencies, string unityEngineDLLPath, string mirrorNetDLLPath, string outputDir)
@@ -485,14 +487,46 @@ namespace Mirror.Weaver
                 ModuleDefinition moduleDefinition = CurrentAssembly.MainModule;
                 Console.WriteLine("Script Module: {0}", moduleDefinition.Name);
 
-                bool modified = WeaveModule(moduleDefinition);
+                // Process each NetworkBehaviour
+                bool didWork = false;
 
-                if (WeavingFailed)
+                // We need to do 2 passes, because SyncListStructs might be referenced from other modules, so we must make sure we generate them first.
+                for (int pass = 0; pass < 2; pass++)
                 {
-                    return false;
+                    System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+                    foreach (TypeDefinition td in moduleDefinition.Types)
+                    {
+                        if (td.IsClass && td.BaseType.CanBeResolved())
+                        {
+                            try
+                            {
+                                if (pass == 0)
+                                {
+                                    didWork |= CheckSyncList(td);
+                                }
+                                else
+                                {
+                                    didWork |= CheckNetworkBehaviour(td);
+                                    didWork |= CheckMessageBase(td);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Error(ex.ToString());
+                                throw ex;
+                            }
+                        }
+
+                        if (WeavingFailed)
+                        {
+                            return false;
+                        }
+                    }
+                    watch.Stop();
+                    Console.WriteLine("Pass: " + pass + " took " + watch.ElapsedMilliseconds + " milliseconds");
                 }
 
-                if (modified)
+                if (didWork)
                 {
                     // this must be done for ALL code, not just NetworkBehaviours
                     try
@@ -507,6 +541,7 @@ namespace Mirror.Weaver
 
                     if (WeavingFailed)
                     {
+                        //Log.Error("Failed phase II.");
                         return false;
                     }
 
@@ -524,45 +559,6 @@ namespace Mirror.Weaver
             }
 
             return true;
-        }
-
-        static bool WeaveModule(ModuleDefinition moduleDefinition)
-        {
-            try
-            {
-                bool modified = false;
-
-                // We need to do 2 passes, because SyncListStructs might be referenced from other modules, so we must make sure we generate them first.
-                System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
-                foreach (TypeDefinition td in moduleDefinition.Types)
-                {
-                    if (td.IsClass && td.BaseType.CanBeResolved())
-                    {
-                        modified |= WeaveSyncObject(td);
-                    }
-                }
-                watch.Stop();
-                Console.WriteLine("Weave sync objects took " + watch.ElapsedMilliseconds + " milliseconds");
-
-                watch.Start();
-                foreach (TypeDefinition td in moduleDefinition.Types)
-                {
-                    if (td.IsClass && td.BaseType.CanBeResolved())
-                    {
-                        modified |= WeaveNetworkBehavior(td);
-                        modified |= WeaveMessage(td);
-                    }
-                }
-                watch.Stop();
-                Console.WriteLine("Weave behaviours and messages took" + watch.ElapsedMilliseconds + " milliseconds");
-
-                return modified;
-            }
-            catch (Exception ex)
-            {
-                Error(ex.ToString());
-                throw ex;
-            }
         }
 
         public static bool WeaveAssemblies(IEnumerable<string> assemblies, IEnumerable<string> dependencies, string outputDir, string unityEngineDLLPath, string mirrorNetDLLPath)

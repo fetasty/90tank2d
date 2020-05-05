@@ -45,7 +45,7 @@ namespace Mirror.Weaver
         }
 
         [InitializeOnLoadMethod]
-        public static void OnInitializeOnLoad()
+        static void OnInitializeOnLoad()
         {
             CompilationPipeline.assemblyCompilationFinished += OnCompilationFinished;
 
@@ -159,7 +159,7 @@ namespace Mirror.Weaver
             }
         }
 
-        static HashSet<string> GetDependecyPaths(string assemblyPath)
+        private static HashSet<string> GetDependecyPaths(string assemblyPath)
         {
             // build directory list for later asm/symbol resolving using CompilationPipeline refs
             HashSet<string> dependencyPaths = new HashSet<string>();

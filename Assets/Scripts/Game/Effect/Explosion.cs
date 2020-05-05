@@ -4,10 +4,9 @@ using UnityEngine;
 
 public class Explosion : MonoBehaviour
 {
-    public AudioClip explosionAudio;
     void Start()
     {
-        AudioSource.PlayClipAtPoint(explosionAudio, transform.position);
+        AudioController.Cur.PlayEffect(EffectAudio.EXPLOSION);
         Destroy(gameObject, 0.5f);
     }
 }

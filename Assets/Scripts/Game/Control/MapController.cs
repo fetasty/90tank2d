@@ -68,6 +68,7 @@ public class MapInfo {
         while (true) {
             x = Random.Range(0, MAX_LENGTH);
             y = Random.Range(1, MAX_LENGTH - 1);
+            if (y <= 1 && x >= 5 && x <= 7) { continue; } // 不要生成在基地
             if (infos[x, y].type == BlockType.NONE
             || infos[x, y].type == BlockType.GRASS
             || infos[x, y].type == BlockType.WALL) {
@@ -141,6 +142,19 @@ public class MapController : NetworkBehaviour {
             Messager.Instance.Listen(MessageID.GAME_RETRY, OnMsgGameStart);
             Messager.Instance.Listen(MessageID.GAME_START, OnMsgGameStart);
             Messager.Instance.Listen(MessageID.BONUS_SHOVEL_TRIGGER, OnMsgBonusShovel);
+            Messager.Instance.Listen(MessageID.DATA_START_LEVEL, OnMsgStartLevel);
+            Messager.Instance.Listen(MessageID.DATA_LEVEL_WIN, OnMsgLevelWin);
+        }
+    }
+    private void OnDestroy() {
+        if (GameData.isHost) {
+            // 事件监听
+            Messager.Instance.CancelListen(MessageID.BONUS_SPAWN, OnMsgSpawnBonus);
+            Messager.Instance.CancelListen(MessageID.GAME_RETRY, OnMsgGameStart);
+            Messager.Instance.CancelListen(MessageID.GAME_START, OnMsgGameStart);
+            Messager.Instance.CancelListen(MessageID.BONUS_SHOVEL_TRIGGER, OnMsgBonusShovel);
+            Messager.Instance.CancelListen(MessageID.DATA_START_LEVEL, OnMsgStartLevel);
+            Messager.Instance.CancelListen(MessageID.DATA_LEVEL_WIN, OnMsgLevelWin);
         }
     }
     private void Update() {
@@ -167,7 +181,7 @@ public class MapController : NetworkBehaviour {
         for (int x = 5; x <= 7; ++x) {
             for (int y = 0; y <= 1; ++y) {
                 if (x == 6 && y == 0) { continue; }
-                GameObject obj = Instantiate(WallChangePrefab, new Vector3(x - 6, y - 6, -1f), Quaternion.identity);
+                GameObject obj = Instantiate(WallChangePrefab, new Vector3(x - 6, y - 6, 1f), Quaternion.identity);
             }
         }
     }
@@ -176,13 +190,21 @@ public class MapController : NetworkBehaviour {
         int x, y;
         mapInfo.RandomBonusPosition(out x, out y);
         GameObject bonus = Instantiate(BonusPrefab, new Vector3(x - 6, y - 6, 1f), Quaternion.identity);
+        Bonus b = bonus.GetComponent<Bonus>();
+        b.type = Random.Range(0, Bonus.BONUS_TYPE_COUNT);
         NetworkServer.Spawn(bonus);
     }
     [ServerCallback]
     private void OnMsgGameStart() {
         ClearMap();
+    }
+    [ServerCallback]
+    private void OnMsgStartLevel() {
         GenerateRandomMapInfo();
         CreateMap(mapInfo);
+    }
+    private void OnMsgLevelWin() {
+        Invoke(nameof(ClearMap), 3f);
     }
     /// <summary>
     /// 生成随机地图信息
@@ -238,6 +260,7 @@ public class MapController : NetworkBehaviour {
         switch (info.type) {
             case BlockType.GRASS:
                 obj = Instantiate(GrassPrefab, position, Quaternion.identity);
+                obj.transform.parent = GameObject.Find("/Maps").transform;
                 break;
             case BlockType.WALL:
                 obj = Instantiate(WallPrefab, position, Quaternion.identity);
@@ -249,9 +272,11 @@ public class MapController : NetworkBehaviour {
                 break;
             case BlockType.WATER:
                 obj = Instantiate(WaterPrefab, position, Quaternion.identity);
+                obj.transform.parent = GameObject.Find("/Maps").transform;
                 break;
             case BlockType.HOME:
                 obj = Instantiate(HomePrefab, position, Quaternion.identity);
+                obj.transform.parent = GameObject.Find("/Maps").transform;
                 break;
             default:
                 break;

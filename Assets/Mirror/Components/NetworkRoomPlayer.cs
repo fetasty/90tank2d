@@ -132,6 +132,27 @@ namespace Mirror
             }
         }
 
+        void DrawPlayerReadyButton()
+        {
+            if (NetworkClient.active && isLocalPlayer)
+            {
+                GUILayout.BeginArea(new Rect(20f, 300f, 120f, 20f));
+
+                if (readyToBegin)
+                {
+                    if (GUILayout.Button("Cancel"))
+                        CmdChangeReadyState(false);
+                }
+                else
+                {
+                    if (GUILayout.Button("Ready"))
+                        CmdChangeReadyState(true);
+                }
+
+                GUILayout.EndArea();
+            }
+        }
+
         void DrawPlayerReadyState()
         {
             GUILayout.BeginArea(new Rect(20f + (index * 100), 200f, 90f, 130f));
@@ -152,27 +173,6 @@ namespace Mirror
             }
 
             GUILayout.EndArea();
-        }
-
-        void DrawPlayerReadyButton()
-        {
-            if (NetworkClient.active && isLocalPlayer)
-            {
-                GUILayout.BeginArea(new Rect(20f, 300f, 120f, 20f));
-
-                if (readyToBegin)
-                {
-                    if (GUILayout.Button("Cancel"))
-                        CmdChangeReadyState(false);
-                }
-                else
-                {
-                    if (GUILayout.Button("Ready"))
-                        CmdChangeReadyState(true);
-                }
-
-                GUILayout.EndArea();
-            }
         }
 
         #endregion

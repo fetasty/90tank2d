@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
@@ -20,68 +19,22 @@ namespace Mirror
 
         // 'int' is the best type for .Position. 'short' is too small if we send >32kb which would result in negative .Position
         // -> converting long to int is fine until 2GB of data (MAX_INT), so we don't have to worry about overflows here
-        int position;
+        public int Position;
+
         int length;
 
-        public int Length => length;
-
-        public int Position
+        public int Length
         {
-            get => position;
-            set
+            get => length;
+            private set
             {
-                position = value;
-                EnsureLength(value);
-            }
-        }
-
-        /// <summary>
-        /// Reset both the position and length of the stream
-        /// </summary>
-        /// <remarks>
-        /// Leaves the capacity the same so that we can reuse this writer without extra allocations
-        /// </remarks>
-        public void Reset()
-        {
-            position = 0;
-            length = 0;
-        }
-
-        /// <summary>
-        /// Sets length, moves position if it is greater than new length
-        /// </summary>
-        /// <param name="newLength"></param>
-        /// <remarks>
-        /// Zeros out any extra length created by setlength
-        /// </remarks>
-        public void SetLength(int newLength)
-        {
-            int oldLength = length;
-
-            // ensure length & capacity
-            EnsureLength(newLength);
-
-            // zero out new length
-            if (oldLength < newLength)
-            {
-                Array.Clear(buffer, oldLength, newLength - oldLength);
-            }
-
-            length = newLength;
-            position = Mathf.Min(position, length);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void EnsureLength(int value)
-        {
-            if (length < value)
-            {
-                length = value;
                 EnsureCapacity(value);
+                length = value;
+                if (Position > length)
+                    Position = length;
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void EnsureCapacity(int value)
         {
             if (buffer.Length < value)
@@ -98,8 +51,8 @@ namespace Mirror
         // ToArray returns all the data we have written,  regardless of the current position
         public byte[] ToArray()
         {
-            byte[] data = new byte[length];
-            Array.ConstrainedCopy(buffer, 0, data, 0, length);
+            byte[] data = new byte[Length];
+            Array.ConstrainedCopy(buffer, 0, data, 0, Length);
             return data;
         }
 
@@ -113,10 +66,21 @@ namespace Mirror
             return new ArraySegment<byte>(buffer, 0, length);
         }
 
+        // reset both the position and length of the stream,  but leaves the capacity the same
+        // so that we can reuse this writer without extra allocations
+        public void SetLength(int value)
+        {
+            Length = value;
+        }
+
         public void WriteByte(byte value)
         {
-            EnsureLength(position + 1);
-            buffer[position++] = value;
+            if (Position >= Length)
+            {
+                Length += 1;
+            }
+
+            buffer[Position++] = value;
         }
 
 
@@ -124,33 +88,39 @@ namespace Mirror
         // (like a packet opcode that's always the same)
         public void WriteBytes(byte[] buffer, int offset, int count)
         {
-            EnsureLength(position + count);
-            Array.ConstrainedCopy(buffer, offset, this.buffer, position, count);
-            position += count;
+            // no null check because we would need to write size info for that too (hence WriteBytesAndSize)
+            if (Position + count > Length)
+            {
+                Length = Position + count;
+            }
+            Array.ConstrainedCopy(buffer, offset, this.buffer, Position, count);
+            Position += count;
         }
 
         public void WriteUInt32(uint value)
         {
-            EnsureLength(position + 4);
-            buffer[position++] = (byte)value;
-            buffer[position++] = (byte)(value >> 8);
-            buffer[position++] = (byte)(value >> 16);
-            buffer[position++] = (byte)(value >> 24);
+            EnsureCapacity(Position + 4);
+            buffer[Position++] = (byte)value;
+            buffer[Position++] = (byte)(value >> 8);
+            buffer[Position++] = (byte)(value >> 16);
+            buffer[Position++] = (byte)(value >> 24);
+            Length = Math.Max(Length, Position);
         }
 
         public void WriteInt32(int value) => WriteUInt32((uint)value);
 
         public void WriteUInt64(ulong value)
         {
-            EnsureLength(position + 8);
-            buffer[position++] = (byte)value;
-            buffer[position++] = (byte)(value >> 8);
-            buffer[position++] = (byte)(value >> 16);
-            buffer[position++] = (byte)(value >> 24);
-            buffer[position++] = (byte)(value >> 32);
-            buffer[position++] = (byte)(value >> 40);
-            buffer[position++] = (byte)(value >> 48);
-            buffer[position++] = (byte)(value >> 56);
+            EnsureCapacity(Position + 8);
+            buffer[Position++] = (byte)value;
+            buffer[Position++] = (byte)(value >> 8);
+            buffer[Position++] = (byte)(value >> 16);
+            buffer[Position++] = (byte)(value >> 24);
+            buffer[Position++] = (byte)(value >> 32);
+            buffer[Position++] = (byte)(value >> 40);
+            buffer[Position++] = (byte)(value >> 48);
+            buffer[Position++] = (byte)(value >> 56);
+            Length = Math.Max(Length, Position);
         }
 
         public void WriteInt64(long value) => WriteUInt64((ulong)value);

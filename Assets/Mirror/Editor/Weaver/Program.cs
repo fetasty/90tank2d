@@ -11,12 +11,12 @@ namespace Mirror.Weaver
 
         public static void Warning(string msg)
         {
-            WarningMethod(msg);
+            WarningMethod("Mirror.Weaver warning: " + msg);
         }
 
         public static void Error(string msg)
         {
-            ErrorMethod(msg);
+            ErrorMethod("Mirror.Weaver error: " + msg);
         }
     }
 

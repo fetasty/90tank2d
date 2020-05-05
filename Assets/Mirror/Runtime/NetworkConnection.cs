@@ -16,8 +16,6 @@ namespace Mirror
     /// </remarks>
     public abstract class NetworkConnection : IDisposable
     {
-        static readonly ILogger logger = LogFactory.GetLogger<NetworkConnection>();
-
         // internal so it can be tested
         internal readonly HashSet<NetworkIdentity> visList = new HashSet<NetworkIdentity>();
 
@@ -85,16 +83,17 @@ namespace Mirror
         /// <para>ConnectionSend con:1 bytes:11 msgId:5 FB59D743FD120000000000 ConnectionRecv con:1 bytes:27 msgId:8 14F21000000000016800AC3FE090C240437846403CDDC0BD3B0000</para>
         /// <para>Note that these are application-level network messages, not protocol-level packets. There will typically be multiple network messages combined in a single protocol packet.</para>
         /// </remarks>
-        [Obsolete("Set logger to Log level instead")]
         public bool logNetworkMessages;
 
         /// <summary>
-        /// Creates a new NetworkConnection
+        /// Creates a new NetworkConnection with the specified address
         /// </summary>
-        internal NetworkConnection() { }
+        internal NetworkConnection()
+        {
+        }
 
         /// <summary>
-        /// Creates a new NetworkConnection with the specified connectionId
+        /// Creates a new NetworkConnection with the specified address and connectionId
         /// </summary>
         /// <param name="networkConnectionId"></param>
         internal NetworkConnection(int networkConnectionId)
@@ -161,14 +160,14 @@ namespace Mirror
         {
             if (segment.Count > Transport.activeTransport.GetMaxPacketSize(channelId))
             {
-                logger.LogError("NetworkConnection.ValidatePacketSize: cannot send packet larger than " + Transport.activeTransport.GetMaxPacketSize(channelId) + " bytes");
+                Debug.LogError("NetworkConnection.ValidatePacketSize: cannot send packet larger than " + Transport.activeTransport.GetMaxPacketSize(channelId) + " bytes");
                 return false;
             }
 
             if (segment.Count == 0)
             {
                 // zero length packets getting into the packet queues are bad.
-                logger.LogError("NetworkConnection.ValidatePacketSize: cannot send zero bytes");
+                Debug.LogError("NetworkConnection.ValidatePacketSize: cannot send zero bytes");
                 return false;
             }
 
@@ -220,7 +219,7 @@ namespace Mirror
                 msgDelegate(this, reader, channelId);
                 return true;
             }
-            if (logger.LogEnabled()) logger.Log("Unknown message ID " + msgType + " " + this + ". May be due to no existing RegisterHandler for this message.");
+            if (Debug.isDebugBuild) Debug.Log("Unknown message ID " + msgType + " " + this + ". May be due to no existing RegisterHandler for this message.");
             return false;
         }
 
@@ -267,7 +266,7 @@ namespace Mirror
                 if (MessagePacker.UnpackMessage(networkReader, out int msgType))
                 {
                     // logging
-                    if (logger.LogEnabled()) logger.Log("ConnectionRecv " + this + " msgType:" + msgType + " content:" + BitConverter.ToString(buffer.Array, buffer.Offset, buffer.Count));
+                    if (logNetworkMessages) Debug.Log("ConnectionRecv " + this + " msgType:" + msgType + " content:" + BitConverter.ToString(buffer.Array, buffer.Offset, buffer.Count));
 
                     // try to invoke the handler for that message
                     if (InvokeHandler(msgType, networkReader, channelId))
@@ -277,21 +276,10 @@ namespace Mirror
                 }
                 else
                 {
-                    logger.LogError("Closed connection: " + this + ". Invalid message header.");
+                    Debug.LogError("Closed connection: " + this + ". Invalid message header.");
                     Disconnect();
                 }
             }
-        }
-
-        // Failsafe to kick clients that have stopped sending anything to the server.
-        // Clients Ping the server every 2 seconds but transports are unreliable
-        // when it comes to properly generating Disconnect messages to the server.
-        // This cannot be abstract because then NetworkConnectionToServer
-        // would require and override that would never be called
-        // This is overriden in NetworkConnectionToClient.
-        internal virtual bool IsClientAlive()
-        {
-            return true;
         }
 
         internal void AddOwnedObject(NetworkIdentity obj)

@@ -21,7 +21,7 @@ namespace Mirror
     [AddComponentMenu("")]
     [RequireComponent(typeof(NetworkIdentity))]
     [HelpURL("https://mirror-networking.com/docs/Guides/NetworkBehaviour.html")]
-    public abstract class NetworkBehaviour : MonoBehaviour
+    public class NetworkBehaviour : MonoBehaviour
     {
         internal float lastSyncTime;
 
@@ -80,7 +80,7 @@ namespace Mirror
         public uint netId => netIdentity.netId;
 
         /// <summary>
-        /// The <see cref="NetworkConnection">NetworkConnection</see> associated with this <see cref="NetworkIdentity">NetworkIdentity.</see> This is only valid for player objects on the client.
+        /// The <see cref="NetworkConnection">NetworkConnection</see> associated with this <see cref="NetworkIdentity">NetworkIdentity.</see> This is only valid for player objects on the server.
         /// </summary>
         public NetworkConnection connectionToServer => netIdentity.connectionToServer;
 
@@ -685,23 +685,12 @@ namespace Mirror
         /// <returns>True if data was written.</returns>
         public virtual bool OnSerialize(NetworkWriter writer, bool initialState)
         {
-            bool objectWritten = false;
-            // if initialState: write all SyncVars.
-            // otherwise write dirtyBits+dirty SyncVars
             if (initialState)
             {
-                objectWritten = SerializeObjectsAll(writer);
+                return SerializeObjectsAll(writer);
             }
-            else
-            {
-                objectWritten = SerializeObjectsDelta(writer);
-            }
-
-            bool syncVarWritten = SerializeSyncVars(writer, initialState);
-
-            return objectWritten || syncVarWritten;
+            return SerializeObjectsDelta(writer);
         }
-
 
         /// <summary>
         /// Virtual function to override to receive custom serialization data. The corresponding function to send serialization data is OnSerialize().
@@ -718,34 +707,6 @@ namespace Mirror
             {
                 DeSerializeObjectsDelta(reader);
             }
-
-            DeserializeSyncVars(reader, initialState);
-        }
-
-        // Don't rename. Weaver uses this exact function name.
-        public virtual bool SerializeSyncVars(NetworkWriter writer, bool initialState)
-        {
-            return false;
-
-            // SyncVar are writen here in subclass
-
-            // if initialState
-            //   write all SyncVars
-            // else
-            //   write syncVarDirtyBits
-            //   write dirty SyncVars
-        }
-
-        // Don't rename. Weaver uses this exact function name.
-        public virtual void DeserializeSyncVars(NetworkReader reader, bool initialState)
-        {
-            // SyncVars are read here in subclass
-
-            // if initialState
-            //   read all SyncVars
-            // else
-            //   read syncVarDirtyBits
-            //   read dirty SyncVars
         }
 
         internal ulong DirtyObjectBits()
@@ -814,32 +775,12 @@ namespace Mirror
             }
         }
 
-        internal void ResetSyncObjects()
-        {
-            foreach (SyncObject syncObject in syncObjects)
-            {
-                syncObject.Reset();
-            }
-        }
-
-        // Deprecated 04/20/2020
-        /// <summary>
-        /// Obsolete: Use <see cref="OnStopClient()"/> instead
-        /// </summary>
-        [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Override OnStopClient() instead")]
-        public virtual void OnNetworkDestroy() { }
-
         /// <summary>
         /// This is invoked on clients when the server has caused this object to be destroyed.
         /// <para>This can be used as a hook to invoke effects or do client specific cleanup.</para>
         /// </summary>
-        public virtual void OnStopClient()
-        {
-#pragma warning disable CS0618 // Type or member is obsolete
-            // backwards compatibility
-            OnNetworkDestroy();
-#pragma warning restore CS0618 // Type or member is obsolete
-        }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public virtual void OnNetworkDestroy() { }
 
         /// <summary>
         /// This is invoked for NetworkBehaviour objects when they become active on the server.
@@ -847,12 +788,6 @@ namespace Mirror
         /// <para>This will be called for objects on a "host" as well as for object on a dedicated server.</para>
         /// </summary>
         public virtual void OnStartServer() { }
-
-        /// <summary>
-        /// Invoked on the server when the object is unspawned
-        /// <para>Useful for saving object data in persistant storage</para>
-        /// </summary>
-        public virtual void OnStopServer() { }
 
         /// <summary>
         /// Called on every NetworkBehaviour when it is activated on a client.
@@ -878,5 +813,35 @@ namespace Mirror
         /// <para>When NetworkIdentity.RemoveClientAuthority is called on the server, this will be called on the client that owns the object.</para>
         /// </summary>
         public virtual void OnStopAuthority() { }
+
+        /// <summary>
+        /// Callback used by the visibility system to (re)construct the set of observers that can see this object.
+        /// <para>Implementations of this callback should add network connections of players that can see this object to the observers set.</para>
+        /// </summary>
+        /// <param name="observers">The new set of observers for this object.</param>
+        /// <param name="initialize">True if the set of observers is being built for the first time.</param>
+        /// <returns>true when overwriting so that Mirror knows that we wanted to rebuild observers ourselves. otherwise it uses built in rebuild.</returns>
+        public virtual bool OnRebuildObservers(HashSet<NetworkConnection> observers, bool initialize)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Callback used by the visibility system for objects on a host.
+        /// <para>Objects on a host (with a local client) cannot be disabled or destroyed when they are not visibile to the local client. So this function is called to allow custom code to hide these objects. A typical implementation will disable renderer components on the object. This is only called on local clients on a host.</para>
+        /// </summary>
+        /// <param name="visible">New visibility state.</param>
+        public virtual void OnSetHostVisibility(bool visible) { }
+
+        /// <summary>
+        /// Callback used by the visibility system to determine if an observer (player) can see this object.
+        /// <para>If this function returns true, the network connection will be added as an observer.</para>
+        /// </summary>
+        /// <param name="conn">Network connection of a player.</param>
+        /// <returns>True if the player can see this object.</returns>
+        public virtual bool OnCheckObserver(NetworkConnection conn)
+        {
+            return true;
+        }
     }
 }

@@ -6,7 +6,7 @@ using UnityEngine.UI;
 using Mirror;
 
 public class Welcome : MonoBehaviour {
-    // public GameObject tankNetworkManager;
+    public GameObject tankNetworkManager;
     public Button singleBtn;    // 单人游戏
     public Button doubleBtn;    // 双人游戏
     public Button lanBtn;       // 局域网游戏 
@@ -17,6 +17,9 @@ public class Welcome : MonoBehaviour {
     public Image startPanel;     // 游戏教程
     public float enterTime = 2f; // 教程显示时间
     private float enterTimer;
+    private void Awake() {
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+    }
 
     private void Start() {
         singleBtn.onClick.AddListener(() => ClickEnter(TankMode.SINGLE));
@@ -29,12 +32,18 @@ public class Welcome : MonoBehaviour {
             EnterGame();
         });
         ShowVersionInfo();
-        if (GameData.isMobile) {
-            doubleBtn.interactable = false;
+        if (GameData.isMobile) { // 直接隐藏, 单人游戏按钮下移动
+            doubleBtn.gameObject.SetActive(false);
         }
     }
     private void Update() {
         StartPanelUpdate();
+        BackOperationUpdate();
+    }
+    private void BackOperationUpdate() {
+        if (Input.GetKeyDown(KeyCode.Escape)) { 
+            GetComponent<EscQuit>().ClickQuit();
+        }
     }
     private void StartPanelUpdate() {
         if (enterTimer > 0f) {
@@ -47,9 +56,14 @@ public class Welcome : MonoBehaviour {
     private void ClickEnter(TankMode mode) {
         GameData.mode = mode;
         if (mode == TankMode.LAN) {
+            NetworkServer.dontListen = false;
             Global.EnterRoomOffline();
             return;
         }
+        NetworkServer.dontListen = true;
+        GameData.isHost = true;
+        Instantiate(tankNetworkManager);
+        NetworkManager.singleton.StartHost();
         if (GameData.isMobile || !IsShowTutorial()) {
             EnterGame();
         } else {
@@ -64,7 +78,6 @@ public class Welcome : MonoBehaviour {
         string companyName = Application.companyName;   //公司名称
         versionInfoText.text = $"{productionName} by {companyName}\nV{version}";
     }
-    // todo 放到GameData中
     private bool IsShowTutorial() {
         return PlayerPrefs.GetInt("tutorial", 1) > 0;
     }
@@ -77,11 +90,6 @@ public class Welcome : MonoBehaviour {
         PlayerPrefs.Save();
     }
     private void EnterGame() {
-        if (GameData.mode != TankMode.LAN) {
-            NetworkServer.dontListen = true; // todo 多人游戏模式中记得先改变这个值/ 退出单机模式时改变也行
-            // Instantiate(tankNetworkManager);
-            // NetworkManager.singleton.StartHost();
-        }
         Global.EnterGame();
     }
 }

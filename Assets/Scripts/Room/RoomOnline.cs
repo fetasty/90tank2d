@@ -21,7 +21,7 @@ public class RoomOnline : MonoBehaviour
     public GameObject playerItemPrefab;
 
     private MyNetworkDiscovery networkDiscovery;
-    private readonly Dictionary<long, MyServerResponse> discoveredServers = new Dictionary<long, MyServerResponse>();
+    private readonly Dictionary<string, MyServerResponse> discoveredServers = new Dictionary<string, MyServerResponse>();
     private void Awake() {
         Current = this;
     }
@@ -54,6 +54,7 @@ public class RoomOnline : MonoBehaviour
     void Update()
     {
         DiscoveryedServerUpdate();
+        BackOperationUpdate();
     }
     private void OnGUI() {
         DiscoveryedServerGUI();
@@ -85,19 +86,26 @@ public class RoomOnline : MonoBehaviour
     }
     private void DiscoveryedServerUpdate() {
         if (roomListPanel != null && roomListPanel.activeSelf) {
-            foreach (long key in discoveredServers.Keys.ToList()) {
+            foreach (string key in discoveredServers.Keys.ToList()) {
                 if (discoveredServers[key].lifeTimer > 0f) {
                     discoveredServers[key].lifeTimer -= Time.deltaTime;
-                } else {
+                }
+                if (discoveredServers[key].lifeTimer <= 0f || discoveredServers[key].playerCount <= 0) {
                     discoveredServers.Remove(key);
                 }
             }
         }
     }
-    private void OnDiscoveredServer(MyServerResponse response) {
-        discoveredServers[response.serverId] = response;
+    private void BackOperationUpdate() {
+        if (Input.GetKeyDown(KeyCode.Escape)) {
+            Back();
+        }
     }
-    private void OnClickJoinRoom(long key) {
+    private void OnDiscoveredServer(MyServerResponse response) {
+        if (response.playerCount <= 0) { return; }
+        discoveredServers[response.deviceUniqueIdentifier] = response;
+    }
+    private void OnClickJoinRoom(string key) {
         if (!discoveredServers.ContainsKey(key)) { return; }
         MyServerResponse info = discoveredServers[key];
         if (info == null) { return; }
@@ -121,6 +129,8 @@ public class RoomOnline : MonoBehaviour
         if (!GameData.isHost) { return; }
         MyNetworkRoomManager manager = NetworkManager.singleton as MyNetworkRoomManager;
         if (manager.numPlayers < manager.minPlayer) { return; }
+        // 关闭服务器广播
+        networkDiscovery.StopDiscovery();
         Global.EnterGame();
     }
     private void Back() {

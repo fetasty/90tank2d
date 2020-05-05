@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using Mirror;
 
 public class Player : NetworkBehaviour {
+    public static int[] playerMoves = new int[] { -1, -1, -1, -1 }; // -1, 没有player; 0, idle; 1, move 
     public const int MIN_ID = 0;
     public const int MAX_ID = 3;
     public const int MIN_LEVEL = 0;
@@ -13,16 +14,15 @@ public class Player : NetworkBehaviour {
     private void IDChange(int _, int newID) {
         id = newID;
         if (animator) {
-            animator.SetInteger("type", id);
-            playerInfo.text = $"{id + 1}P 等级{Level}";
+            animator.SetInteger("type", id % 2);
+            playerInfo.text = $"{id + 1}P 等级{level}";
         }
     }
-    public AudioClip idleAudio;
-    public AudioClip drivingAudio;
     public GameObject shield;
     public GameObject bulletPrefab;
     public GameObject explosionPrefab;
-    public Canvas playerInfoPanel;
+    public GameObject playerInfoPrefab;
+    private GameObject playerInfoPanel;
     public Text playerInfo;
     public Color[] levelColors;
     private bool isMobileFireDown;          // 虚拟开火按钮是否按下
@@ -38,24 +38,18 @@ public class Player : NetworkBehaviour {
     private bool horizontalInputLast;        // 最后的轴向输入是否为水平方向 (移动优化)
 
     private Animator animator;
-    private AudioSource audioSource;
+    [SyncVar(hook = nameof(LevelChange))]
     public int level = 0;                  // 玩家等级
-    private enum Direction { NONE, UP, RIGHT, DOWN, LEFT }
-    private int Level {
-        get { return level; }
-        set {
-            if (value >= MIN_LEVEL && value <= MAX_LEVEL) {
-                level = value;
-                if (animator != null) { animator.SetInteger("level", level); }
-                playerInfo.color = levelColors[level];
-                playerInfo.text = $"{id + 1}P 等级{Level}";
-            }
-        }
+    private void LevelChange(int _, int newLevel) {
+        if (animator != null) { animator.SetInteger("level", newLevel); }
+        playerInfo.color = levelColors[newLevel];
+        playerInfo.text = $"{id + 1}P 等级{newLevel}";
     }
+    private enum Direction { NONE, UP, RIGHT, DOWN, LEFT }
     public float FillTime {
         get {
-            if (Level < 1) { return initFillTime; }
-            if (Level < 2) { return initFillTime - 0.1f; }
+            if (level < 1) { return initFillTime; }
+            if (level < 2) { return initFillTime - 0.1f; }
             return initFillTime - 0.2f;
         }
     }
@@ -80,9 +74,9 @@ public class Player : NetworkBehaviour {
     /// </summary>
     public int BulletLevel {
         get {
-            if (Level < 1) {
+            if (level < 1) {
                 return 0;
-            } else if (Level < 3) {
+            } else if (level < 3) {
                 return 1;
             } else {
                 return 2;
@@ -91,7 +85,7 @@ public class Player : NetworkBehaviour {
     }
     public float MoveSpeed {
         get {
-            if (Level < 1) {
+            if (level < 1) {
                 return initMoveSpeed;
             }
             return initMoveSpeed + 1f;
@@ -102,22 +96,26 @@ public class Player : NetworkBehaviour {
     /// </summary>
     public int BulletCapacity {
         get {
-            if (Level < 2) { return initBulletCapacity; }
+            if (level < 2) { return initBulletCapacity; }
             else { return initBulletCapacity * 2; }
         }
     }
+    private void Awake() {
+        playerInfoPanel = Instantiate(playerInfoPrefab);
+        playerInfo = playerInfoPanel.transform.GetChild(0).GetComponent<Text>();
+    }
     void Start() {
         Debug.Log($"player start id {id}");
+        playerMoves[id] = 0;
         GameObject tanks = GameObject.Find("/Tanks");
         if (tanks != null) {
             transform.parent = tanks.transform;
         }
         animator = GetComponent<Animator>();
-        audioSource = GetComponent<AudioSource>();
-        animator.SetInteger("type", id);
-        Level = Level;  // 初始化样式, 玩家信息
+        animator.SetInteger("type", id % 2);
+        LevelChange(0, level);  // 初始化样式, 玩家信息
         InfoPositionUpdate();   // 玩家信息位置调整
-        if (isLocalPlayer) {
+        if (hasAuthority || !GameData.IsLan) {
             BulletCount = BulletCapacity;
         }
         if (isServer) {
@@ -125,38 +123,35 @@ public class Player : NetworkBehaviour {
             ServerSetShield(bornShieldTime);
             Messager.Instance.Listen<int>(MessageID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
             Messager.Instance.Listen<int>(MessageID.BONUS_SHIELD_TRIGGER, OnMsgShield);
+            // Messager.Instance.Listen(MessageID.LEVEL_WIN, OnMsgLevelWin);
         }
-        if (GameData.isMobile && isLocalPlayer) {
+        if (GameData.isMobile && hasAuthority) {
             Messager.Instance.Listen<Vector2>(MessageID.MOBILE_MOVE_INPUT, OnMsgMobileMove);
             Messager.Instance.Listen<bool>(MessageID.MOBILE_FIRE_INPUT, OnMsgMobileFire);
         }
     }
-    private void BeforeDestroy() {
-        if (isServer) {
-            // 游戏中会动态销毁的实例, 必须在销毁时注销监听
-            Messager.Instance.CancelListen<int>(MessageID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
-            Messager.Instance.CancelListen<int>(MessageID.BONUS_SHIELD_TRIGGER, OnMsgShield);
-        }
-    }
     private void OnDestroy() {
-        Debug.Log($"Player OnDestroy id = {id}"); // todo debug
+        Debug.Log($"Player OnDestroy id = {id}");
+        Destroy(playerInfoPanel);
+        playerMoves[id] = -1;
         // Important: isServer在OnDestroy中不能使用
-        if (NetworkServer.active) {
+        if (GameData.isHost) {
             // 游戏中会动态销毁的实例, 必须在销毁时注销监听
             Messager.Instance.CancelListen<int>(MessageID.BONUS_LEVEL_TRIGGER, OnMsgLevelUp);
             Messager.Instance.CancelListen<int>(MessageID.BONUS_SHIELD_TRIGGER, OnMsgShield);
+            // Messager.Instance.CancelListen(MessageID.LEVEL_WIN, OnMsgLevelWin);
         }
-        if (GameData.isMobile && isLocalPlayer) {
+        if (GameData.isMobile && hasAuthority) {
             Messager.Instance.CancelListen<Vector2>(MessageID.MOBILE_MOVE_INPUT, OnMsgMobileMove);
             Messager.Instance.CancelListen<bool>(MessageID.MOBILE_FIRE_INPUT, OnMsgMobileFire);
         }
     }
     private void Update() {
-        if (GameData.isGamePausing) { return; }
+        if (GameData.isGamePausing && isServer) { return; }
         if (isServer) {
             ShieldUpdate();
         }
-        if (isLocalPlayer) {
+        if (hasAuthority || !GameData.IsLan) {
             FireUpdate();
         }
     }
@@ -195,8 +190,8 @@ public class Player : NetworkBehaviour {
         NetworkServer.Spawn(obj);
     }
     private void FixedUpdate() {
-        if (GameData.isGamePausing) { return; }
-        if (isLocalPlayer) {
+        if (GameData.isGamePausing && isServer) { return; }
+        if (hasAuthority || !GameData.IsLan) {
             ClientMove();
         }
         if (isClient) { InfoPositionUpdate(); }
@@ -256,14 +251,10 @@ public class Player : NetworkBehaviour {
             transform.rotation = Quaternion.Euler(0f, 0f, -angle);
             transform.Translate(transform.up * Time.fixedDeltaTime * MoveSpeed, Space.World);
         }
-        audioSource.clip = isMove ? drivingAudio : idleAudio;
-        if (!audioSource.isPlaying) {
-            audioSource.Play();
-        }
+        playerMoves[id] = isMove ? 1 : 0;
     }
     private void InfoPositionUpdate() {
         playerInfoPanel.transform.position = transform.position + new Vector3(0f, 0.7f, 0f);
-        playerInfoPanel.transform.rotation = Quaternion.identity;
     }
     /// <summary>
     /// 玩家中弹, 返回玩家受伤后是否死亡
@@ -273,8 +264,8 @@ public class Player : NetworkBehaviour {
     public bool TakeDamage() {
         Debug.Log($"Player damage id {id}");
         if (ShieldTimer > 0f) { return false; }
-        if (Level >= 2) {
-            RpcLevelDown(2);
+        if (level >= 2) {
+            level -= 2;
             return false;
         } else {
             Messager.Instance.Send<int>(MessageID.PLAYER_DIE, id);
@@ -282,15 +273,6 @@ public class Player : NetworkBehaviour {
             NetworkServer.Destroy(gameObject);
             return true;
         }
-    }
-    [ClientRpc]
-    public void RpcLevelDown(int down) {
-        Level -= down;
-    }
-    [ClientRpc]
-    public void RpcLevelUp() {
-        if (Level >= MAX_LEVEL) { return; }
-        ++Level;
     }
     [ServerCallback]
     public void ServerSetShield(float time) {
@@ -331,7 +313,7 @@ public class Player : NetworkBehaviour {
     [ServerCallback]
     public void OnMsgLevelUp(int playerID) {
         if (id == playerID) {
-            RpcLevelUp();
+            if (level < MAX_LEVEL) { ++level; }
         }
     }
     [ServerCallback]

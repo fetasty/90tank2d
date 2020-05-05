@@ -9,7 +9,9 @@ namespace Mirror
     {
         internal ULocalConnectionToServer connectionToServer;
 
-        public ULocalConnectionToClient() : base(0) { }
+        public ULocalConnectionToClient() : base(0)
+        {
+        }
 
         public override string address => "localhost";
 
@@ -19,9 +21,6 @@ namespace Mirror
 
             return true;
         }
-
-        // override for host client: always return true.
-        internal override bool IsClientAlive() => true;
 
         internal void DisconnectInternal()
         {
@@ -72,7 +71,7 @@ namespace Mirror
 
         public void ResetBuffer()
         {
-            writer.Reset();
+            writer.SetLength(0);
             reader.Position = 0;
         }
     }

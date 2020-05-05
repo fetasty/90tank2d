@@ -33,7 +33,7 @@ namespace Mirror.Examples.Chat
             conn.Send(new CreatePlayerMessage { name = PlayerName });
         }
 
-        void OnCreatePlayer(NetworkConnection connection, CreatePlayerMessage createPlayerMessage)
+        private void OnCreatePlayer(NetworkConnection connection, CreatePlayerMessage createPlayerMessage)
         {
             // create a gameobject using the name supplied by client
             GameObject playergo = Instantiate(playerPrefab);

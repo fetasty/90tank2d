@@ -143,13 +143,13 @@ namespace Mirror.Weaver
         {
             if (!md.Name.StartsWith("Target"))
             {
-                Weaver.Error($"{md.Name} must start with Target.  Consider renaming it to Target{md.Name}", md);
+                Weaver.Error($"{md} must start with Target.  Consider renaming it to Target{md.Name}");
                 return false;
             }
 
             if (md.IsStatic)
             {
-                Weaver.Error($"{md.Name} must not be static", md);
+                Weaver.Error($"{md} must not be static");
                 return false;
             }
 

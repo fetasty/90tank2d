@@ -10,6 +10,8 @@ public class Spawner : NetworkBehaviour {
     // Player生成相关参数
     public bool SpawnPlayer { get; private set; }
     public int PlayerID { get; private set; }
+    public int PlayerLevel { get; private set; }
+    public bool PlayerFree { get; private set; }
     // Enemy生成相关参数
     public int EnemyType {get; private set;}
     public bool EnemyBonus { get; private set; }
@@ -21,7 +23,7 @@ public class Spawner : NetworkBehaviour {
         }
         if(isServer) {
             if (SpawnPlayer) {
-                Messager.Instance.Send<int>(MessageID.PLAYER_SPAWN, PlayerID);
+                Messager.Instance.Send<int, bool>(MessageID.PLAYER_SPAWN, PlayerID, PlayerFree);
             } else {
                 Messager.Instance.Send(MessageID.ENEMY_SPAWN);
             }
@@ -42,9 +44,11 @@ public class Spawner : NetworkBehaviour {
         this.EnemyType = enemyType;
         this.EnemyBonus = enemyBonus;
     }
-    public void SetPlayer(int id = 0) {
+    public void SetPlayer(int id = 0, int level = 0, bool isFree = false) {
         this.SpawnPlayer = true;
         this.PlayerID = id;
+        this.PlayerLevel = level;
+        this.PlayerFree = isFree;
     }
     [ServerCallback]
     private void SpawnUpdate() {
@@ -56,7 +60,8 @@ public class Spawner : NetworkBehaviour {
                 GameObject obj = Instantiate(playerPrefab, transform.position, Quaternion.identity);
                 Player player = obj.GetComponent<Player>();
                 player.id = PlayerID;
-                NetworkServer.AddPlayerForConnection(GameData.networkPlayers[PlayerID], obj);
+                player.level = PlayerLevel;
+                NetworkServer.ReplacePlayerForConnection(GameData.networkPlayers[PlayerID], obj, true);
             } else {
                 GameObject obj = Instantiate(enemyPrefab, transform.position, Quaternion.Euler(0f, 0f, 180f));
                 Enemy enemy = obj.GetComponent<Enemy>();

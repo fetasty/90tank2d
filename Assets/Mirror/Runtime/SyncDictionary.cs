@@ -38,14 +38,6 @@ namespace Mirror
         // so we need to skip them
         int changesAhead;
 
-        public void Reset()
-        {
-            IsReadOnly = false;
-            changes.Clear();
-            changesAhead = 0;
-            objects.Clear();
-        }
-
         protected virtual void SerializeKey(NetworkWriter writer, TKey item) { }
         protected virtual void SerializeItem(NetworkWriter writer, TValue item) { }
         protected virtual TKey DeserializeKey(NetworkReader reader) => default;

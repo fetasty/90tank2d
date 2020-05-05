@@ -12,6 +12,7 @@ public class RoomPlayer : NetworkBehaviour {
     private void Start() {
         RectTransform rect = transform as RectTransform;
         rect.SetParent(RoomOnline.Current.playerListContent.transform);
+        rect.localScale = new Vector3(1f, 1f, 1f);
     }
     public override void OnStartClient() {
         if (isLocalPlayer) {

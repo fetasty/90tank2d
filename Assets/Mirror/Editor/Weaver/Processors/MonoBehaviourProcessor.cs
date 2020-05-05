@@ -17,11 +17,11 @@ namespace Mirror.Weaver
             foreach (FieldDefinition fd in td.Fields)
             {
                 if (fd.HasCustomAttribute(Weaver.SyncVarType))
-                    Weaver.Error($"SyncVar {fd.Name} must be inside a NetworkBehaviour.  {td.Name} is not a NetworkBehaviour", fd);
+                    Weaver.Error($"[SyncVar] {fd} must be inside a NetworkBehaviour.  {td} is not a NetworkBehaviour");
 
                 if (SyncObjectInitializer.ImplementsSyncObject(fd.FieldType))
                 {
-                    Weaver.Error($"{fd.Name} is a SyncObject and must be inside a NetworkBehaviour.  {td.Name} is not a NetworkBehaviour", fd);
+                    Weaver.Error($"{fd} is a SyncObject and must be inside a NetworkBehaviour.  {td} is not a NetworkBehaviour");
                 }
             }
         }
@@ -35,17 +35,17 @@ namespace Mirror.Weaver
                 {
                     if (ca.AttributeType.FullName == Weaver.CommandType.FullName)
                     {
-                        Weaver.Error($"Command {md.Name} must be declared inside a NetworkBehaviour", md);
+                        Weaver.Error($"[Command] {md} must be declared inside a NetworkBehaviour");
                     }
 
                     if (ca.AttributeType.FullName == Weaver.ClientRpcType.FullName)
                     {
-                        Weaver.Error($"ClientRpc {md.Name} must be declared inside a NetworkBehaviour", md);
+                        Weaver.Error($"[ClientRpc] {md} must be declared inside a NetworkBehaviour");
                     }
 
                     if (ca.AttributeType.FullName == Weaver.TargetRpcType.FullName)
                     {
-                        Weaver.Error($"TargetRpc {md.Name} must be declared inside a NetworkBehaviour", md);
+                        Weaver.Error($"[TargetRpc] {md} must be declared inside a NetworkBehaviour");
                     }
 
                     string attributeName = ca.Constructor.DeclaringType.ToString();
@@ -53,16 +53,16 @@ namespace Mirror.Weaver
                     switch (attributeName)
                     {
                         case "Mirror.ServerAttribute":
-                            Weaver.Error($"Server method {md.Name} must be declared inside a NetworkBehaviour", md);
+                            Weaver.Error($"[Server] {md} must be declared inside a NetworkBehaviour");
                             break;
                         case "Mirror.ServerCallbackAttribute":
-                            Weaver.Error($"ServerCallback method {md.Name} must be declared inside a NetworkBehaviour", md);
+                            Weaver.Error($"[ServerCallback] {md} must be declared inside a NetworkBehaviour");
                             break;
                         case "Mirror.ClientAttribute":
-                            Weaver.Error($"Client method {md.Name} must be declared inside a NetworkBehaviour", md);
+                            Weaver.Error($"[Client] {md} must be declared inside a NetworkBehaviour");
                             break;
                         case "Mirror.ClientCallbackAttribute":
-                            Weaver.Error($"ClientCallback method {md.Name} must be declared inside a NetworkBehaviour", md);
+                            Weaver.Error($"[ClientCallback] {md} must be declared inside a NetworkBehaviour");
                             break;
                     }
                 }

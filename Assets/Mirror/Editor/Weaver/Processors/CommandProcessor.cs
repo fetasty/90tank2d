@@ -120,13 +120,13 @@ namespace Mirror.Weaver
         {
             if (!md.Name.StartsWith("Cmd"))
             {
-                Weaver.Error($"{md.Name} must start with Cmd.  Consider renaming it to Cmd{md.Name}", md);
+                Weaver.Error($"{md} must start with Cmd.  Consider renaming it to Cmd{md.Name}");
                 return false;
             }
 
             if (md.IsStatic)
             {
-                Weaver.Error($"{md.Name} cannot be static", md);
+                Weaver.Error($"{md} cannot be static");
                 return false;
             }
 

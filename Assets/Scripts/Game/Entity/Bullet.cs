@@ -12,9 +12,6 @@ public class Bullet : NetworkBehaviour {
     [SyncVar]
     public bool isPlayerBullet;
     // ----------------------------------------------------------------
-    public AudioClip[] audios;  // fire, hit, heart
-    public AudioClip hitAudio;
-    public AudioClip heartAudio;
     public Transform explosionPoint;
     /// <summary>
     /// 子弹等级, 默认0级, 1级速度比较快, 2级速度快且可以破坏铁墙
@@ -30,6 +27,7 @@ public class Bullet : NetworkBehaviour {
     public float maxLife = 3.0f;
     public float speed = 8.0f; // 子弹移动速度, 随等级变化
     private float lifeTimer;
+    private bool destroyFlag; // 删除标记
     #endregion
 
     #region lifecall
@@ -37,20 +35,28 @@ public class Bullet : NetworkBehaviour {
     {
         GameObject bullets = GameObject.Find("/Bullets");
         if (bullets != null) { transform.parent = bullets.transform; }
-        AudioSource.PlayClipAtPoint(audios[0], transform.position);
+        if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.FIRE); }
         if (isServer) {
             lifeTimer = maxLife;
+            destroyFlag = false;
         }
     }
     [ServerCallback]
     private void Update() {
-        if (GameData.isGamePausing) { return; }
+        DestroyUpdate();
+        if (GameData.isGamePausing && isServer) { return; }
         LifeUpdate();
     }
     [ServerCallback]
     private void FixedUpdate() {
-        if (GameData.isGamePausing) { return; }
+        if (GameData.isGamePausing && isServer) { return; }
         transform.Translate(transform.up * speed * Time.fixedDeltaTime, Space.World);
+    }
+    [ServerCallback]
+    private void DestroyUpdate() {
+        if (destroyFlag) {
+            NetworkServer.Destroy(gameObject);
+        }
     }
     [ServerCallback]
     private void LifeUpdate() {
@@ -61,67 +67,77 @@ public class Bullet : NetworkBehaviour {
             }
         }
     }
-    // 网络行为处理, 广播客户端
+    [ClientRpc]
+    private void RpcPlayAudio(EffectAudio type) {
+        Debug.Log($"RpcPlayAudio {type}");
+        AudioController.Cur.PlayEffect(type);
+    }
+    // todo 网络行为处理, 广播客户端 (做不到)
+    // host提示rpc函数在no-spawned物体上调用, 可能是因为调用RPC之后立即调用了Destroy导致, 但是不调用Destroy, 可能多次进入检测
+    // 用标志位, host上还是听不到声音, 只是消除了警告
     [ServerCallback]
     private void OnTriggerEnter2D(Collider2D other) {
+        if (destroyFlag) { return; }
         switch (other.tag) {
             case "Barrier":
-                NetworkServer.Destroy(gameObject);
+                    if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.HIT); }
+                    RpcPlayAudio(EffectAudio.HIT);
+                    destroyFlag = true;
                 break;
             case "Player":
-                if (!GameData.isGamePlaying) { return; }
+                if (!GameData.isGamePlaying || !GameData.isInGameLevel) { return; }
                 if (!isPlayerBullet) {
                     Player player = other.GetComponent<Player>();
                     if (!player.TakeDamage()) {
-                        RpcPlayAudio(1);
+                        if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.HIT); }
+                        RpcPlayAudio(EffectAudio.HIT);
                     }
-                    NetworkServer.Destroy(gameObject);
+                    destroyFlag = true;
                 }
                 break;
             case "Enemy":
-                if (!GameData.isGamePlaying) { return; }
+                if (!GameData.isGamePlaying || !GameData.isInGameLevel) { return; }
                 if (isPlayerBullet) {
                     Enemy enemy = other.GetComponent<Enemy>();
                     if (!enemy.TakeDamage()) {
-                        RpcPlayAudio(1);
+                        if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.HIT); }
+                        RpcPlayAudio(EffectAudio.HIT);
                     }
-                    NetworkServer.Destroy(gameObject);
+                    destroyFlag = true;
                 }
                 break;
-            // todo ---
             case "Wall":
-                if (!GameData.isGamePlaying) { return; }
-                AudioSource.PlayClipAtPoint(heartAudio, transform.position); // todo 合适音效
+                if (!GameData.isGamePlaying || !GameData.isInGameLevel) { return; }
+                if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.DESTROY); }
+                RpcPlayAudio(EffectAudio.DESTROY);
                 DistroyWall("Wall");
-                Destroy(gameObject);
+                destroyFlag = true;
                 break;
             case "Steel":
-                if (!GameData.isGamePlaying) { return; }
-                AudioSource.PlayClipAtPoint(hitAudio, transform.position);
+                if (!GameData.isGamePlaying || !GameData.isInGameLevel) { return; }
+                if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.HIT); }
+                RpcPlayAudio(EffectAudio.HIT);
                 if (level >= 2) {
                     DistroyWall("Steel");
                 }
-                Destroy(gameObject);
+                destroyFlag = true;
                 break;
             case "Bullet":
-                if (!GameData.isGamePlaying) { return; }
+                if (!GameData.isGamePlaying || !GameData.isInGameLevel) { return; }
                 if (isPlayerBullet == other.GetComponent<Bullet>().isPlayerBullet) { return; }
-                AudioSource.PlayClipAtPoint(hitAudio, transform.position);
-                Destroy(other.gameObject);
-                Destroy(gameObject);
+                if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.HIT); }
+                RpcPlayAudio(EffectAudio.HIT);
+                destroyFlag = true;
                 break;
             case "Home":
-                if (!GameData.isGamePlaying) { return; }
+                if (!GameData.isGamePlaying || !GameData.isInGameLevel) { return; }
                 if (!other.GetComponent<Home>().TakeDamage()) {
-                    AudioSource.PlayClipAtPoint(hitAudio, transform.position);
+                    if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.HIT); }
+                    RpcPlayAudio(EffectAudio.HIT);
                 }
-                Destroy(gameObject);
+                destroyFlag = true;
                 break;
         }
-    }
-    [ClientRpc]
-    private void RpcPlayAudio(int index) {
-        AudioSource.PlayClipAtPoint(audios[index], transform.position);
     }
     #endregion
     #region customfunc
@@ -134,7 +150,7 @@ public class Bullet : NetworkBehaviour {
         int count = 0;
         for (int i = colliders.Length - 1; i >= 0; --i) {
             if (colliders[i].tag == tag) {
-                Destroy(colliders[i].gameObject);
+                NetworkServer.Destroy(colliders[i].gameObject);
                 ++count;
                 if (count >= 2) { break; }
             }

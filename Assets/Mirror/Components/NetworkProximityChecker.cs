@@ -10,7 +10,7 @@ namespace Mirror
     [AddComponentMenu("Network/NetworkProximityChecker")]
     [RequireComponent(typeof(NetworkIdentity))]
     [HelpURL("https://mirror-networking.com/docs/Components/NetworkProximityChecker.html")]
-    public class NetworkProximityChecker : NetworkVisibility
+    public class NetworkProximityChecker : NetworkBehaviour
     {
         /// <summary>
         /// Enumeration of methods to use to check proximity.
@@ -79,11 +79,10 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Callback used by the visibility system to determine if an observer (player) can see this object.
-        /// <para>If this function returns true, the network connection will be added as an observer.</para>
+        /// Called when a new player enters
         /// </summary>
-        /// <param name="conn">Network connection of a player.</param>
-        /// <returns>True if the player can see this object.</returns>
+        /// <param name="conn">NetworkConnection of player object</param>
+        /// <returns>True if object is within visible range</returns>
         public override bool OnCheckObserver(NetworkConnection conn)
         {
             if (forceHidden)
@@ -93,16 +92,18 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Callback used by the visibility system to (re)construct the set of observers that can see this object.
-        /// <para>Implementations of this callback should add network connections of players that can see this object to the observers set.</para>
+        /// Called when a new player enters, and when scene changes occur
         /// </summary>
-        /// <param name="observers">The new set of observers for this object.</param>
-        /// <param name="initialize">True if the set of observers is being built for the first time.</param>
-        public override void OnRebuildObservers(HashSet<NetworkConnection> observers, bool initialize)
+        /// <param name="observers">List of players to be updated.  Modify this set with all the players that can see this object</param>
+        /// <param name="initialize">True if this is the first time the method is called for this object</param>
+        /// <returns>True if this component calculated the list of observers</returns>
+        public override bool OnRebuildObservers(HashSet<NetworkConnection> observers, bool initialize)
         {
             // if force hidden then return without adding any observers.
             if (forceHidden)
-                return;
+                // always return true when overwriting OnRebuildObservers so that
+                // Mirror knows not to use the built in rebuild method.
+                return true;
 
             // find players within range
             switch (checkMethod)
@@ -115,9 +116,13 @@ namespace Mirror
                     Add2DHits(observers);
                     break;
             }
+
+            // always return true when overwriting OnRebuildObservers so that
+            // Mirror knows not to use the built in rebuild method.
+            return true;
         }
 
-        void Add3DHits(HashSet<NetworkConnection> observers)
+        private void Add3DHits(HashSet<NetworkConnection> observers)
         {
             // cast without allocating GC for maximum performance
             int hitCount = Physics.OverlapSphereNonAlloc(transform.position, visRange, hitsBuffer3D, castLayers);
@@ -137,7 +142,8 @@ namespace Mirror
             }
         }
 
-        void Add2DHits(HashSet<NetworkConnection> observers)
+
+        private void Add2DHits(HashSet<NetworkConnection> observers)
         {
             // cast without allocating GC for maximum performance
             int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, visRange, hitsBuffer2D, castLayers);
@@ -154,6 +160,21 @@ namespace Mirror
                 {
                     observers.Add(identity.connectionToClient);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Called when hiding and showing objects on the host.
+        /// On regular clients, objects simply spawn/despawn.
+        /// On host, objects need to remain in scene because the host is also the server.
+        ///    In that case, we simply hide/show meshes for the host player.
+        /// </summary>
+        /// <param name="visible"></param>
+        public override void OnSetHostVisibility(bool visible)
+        {
+            foreach (Renderer rend in GetComponentsInChildren<Renderer>())
+            {
+                rend.enabled = visible;
             }
         }
     }
