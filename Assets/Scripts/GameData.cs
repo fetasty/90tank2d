@@ -38,8 +38,7 @@ public static class GameData {
     public static float configBonusStopWatchTime = 10f;   // 秒表时长
     public static float configBonusShieldTime = 15f;      // 护盾时长
     public static float configBonusShovelTime = 40f;      // 铁锹时长
-    // todo test
-    public static int configMaxGameLevel = 1;               // 从0计算的最大关卡数
+    public static int configMaxGameLevel = 5;               // 从0计算的最大关卡数
 
 
     // 使用数据
@@ -221,8 +220,6 @@ public static class GameData {
     private static void SetLevelDifficulty() {
         // 敌人
         totalEnemyCount = configTotalEnemyCount + playerCount * 10 * (gameLevel + 1);
-        // todo test
-        totalEnemyCount = 3;
         maxAliveEnemyCount = playerCount + 3 + gameLevel;
         minEnemySpawnTime = configMinEnemySpawnTime;
         maxEnemySpawnTime = configMaxEnemySpawnTime - (playerCount + gameLevel + 1) * 0.5f;
