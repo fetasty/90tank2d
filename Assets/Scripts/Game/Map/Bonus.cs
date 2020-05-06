@@ -22,6 +22,7 @@ public class Bonus : NetworkBehaviour
     private Animation anim;
     private float lifeTimer;
     private SpriteRenderer spriteRender;
+    private bool destroyFlag;
     private void Start() {
         spriteRender = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animation>();
@@ -34,9 +35,18 @@ public class Bonus : NetworkBehaviour
     private void Update() {
         if (GameData.isGamePausing && isServer) { return; }
         LifeUpdate();
+        DestroyUpdate();
+    }
+    [ServerCallback]
+    private void DestroyUpdate() {
+        if (destroyFlag) {
+            NetworkServer.Destroy(gameObject);
+        }
     }
     private void OnTriggerEnter2D(Collider2D other) {
+        if (destroyFlag) { return; }
         if (other.tag == "Player") {
+            destroyFlag = true;
             if (isClient) { AudioController.Cur.PlayEffect(EffectAudio.BONUS); }
             if (isServer) {
                 Player p = other.GetComponent<Player>();
@@ -62,7 +72,6 @@ public class Bonus : NetworkBehaviour
                     default:
                         return;
                 }
-                NetworkServer.Destroy(gameObject);
             }
         }
     }

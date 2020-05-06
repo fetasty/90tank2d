@@ -99,6 +99,7 @@ public class TankController : NetworkBehaviour {
             index = index % EnemySpawnPoints.Length;
             if (enemySpawnPointTimers[index] > 0f) { return false; }
         }
+        Messager.Instance.Send(MessageID.ENEMY_SPAWN);
         GameObject obj = Instantiate(SpawnerPrefab, EnemySpawnPoints[index], Quaternion.identity);
         Spawner spawner = obj.GetComponent<Spawner>();
         spawner.SetEnemy(GameData.EnemyType, GameData.EnemyBonus);
@@ -114,6 +115,7 @@ public class TankController : NetworkBehaviour {
     public bool SpawnPlayer(int playerID, int level = 0, bool isFree = false) {
         if (playerID < Player.MIN_ID || playerID > Player.MAX_ID) { return false; } // 未设计这种玩家
         if (playerExists[playerID]) { return false; }
+        Messager.Instance.Send<int, bool>(MessageID.PLAYER_SPAWN, playerID, isFree);
         GameObject obj = Instantiate(SpawnerPrefab, PlayerSpawnPoints[playerID], Quaternion.identity);
         Spawner spawner = obj.GetComponent<Spawner>();
         spawner.SetPlayer(playerID, level, isFree);

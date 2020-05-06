@@ -22,11 +22,6 @@ public class Spawner : NetworkBehaviour {
             transform.parent = spawners.transform;
         }
         if(isServer) {
-            if (SpawnPlayer) {
-                Messager.Instance.Send<int, bool>(MessageID.PLAYER_SPAWN, PlayerID, PlayerFree);
-            } else {
-                Messager.Instance.Send(MessageID.ENEMY_SPAWN);
-            }
             spawnTimer = spawnTime;
         }
     }
