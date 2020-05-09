@@ -33,6 +33,10 @@
 
 ![主菜单](img/menu.png)
 
+![局域网联机](img/lan-menu.png)
+
+![局域网房间](img/lan-room.png)
+
 ![游戏截图1](img/game1.jpg)
 
 ![游戏截图2](img/game2.jpg)
