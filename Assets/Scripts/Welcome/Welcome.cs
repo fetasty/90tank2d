@@ -15,8 +15,6 @@ public class Welcome : MonoBehaviour {
     public Button skipBtn;      // 跳过教程
     public Text versionInfoText; // 版本信息
     public Image startPanel;     // 游戏教程
-    public float enterTime = 2f; // 教程显示时间
-    private float enterTimer;
     private void Awake() {
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
     }
@@ -37,20 +35,11 @@ public class Welcome : MonoBehaviour {
         }
     }
     private void Update() {
-        StartPanelUpdate();
         BackOperationUpdate();
     }
     private void BackOperationUpdate() {
         if (Input.GetKeyDown(KeyCode.Escape)) { 
             GetComponent<EscQuit>().ClickQuit();
-        }
-    }
-    private void StartPanelUpdate() {
-        if (enterTimer > 0f) {
-            enterTime -= Time.deltaTime;
-            if (enterTime < 0f) {
-                EnterGame();
-            }
         }
     }
     private void ClickEnter(TankMode mode) {
@@ -67,7 +56,6 @@ public class Welcome : MonoBehaviour {
         if (GameData.isMobile || !IsShowTutorial()) {
             EnterGame();
         } else {
-            enterTimer = enterTime;
             startPanel.gameObject.SetActive(true);
         }
     }
